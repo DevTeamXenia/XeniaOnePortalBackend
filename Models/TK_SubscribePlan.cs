@@ -1,0 +1,39 @@
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
+
+namespace XeniaTempleBackend.Models
+{
+    [Table("TK_SubscribePlan", Schema = "dbo")]
+    public class TK_SubscribePlan
+    {
+        [Key]
+        public int PlanId { get; set; }
+
+        public int CompanyId { get; set; }
+
+        [Required, MaxLength(200)]
+        public string PlanName { get; set; } = null!;
+
+        [MaxLength(500)]
+        public string? PlanDescription { get; set; }
+
+        [Column(TypeName = "decimal(18,2)")]
+        public decimal PlanPrice { get; set; }
+
+        public int PlanDurationDays { get; set; }
+
+        public int PlanUsers { get; set; }
+        public bool PlanIsAddeOn { get; set; }
+
+        public int? PlanCreatedBy { get; set; }
+
+        public DateTime PlanCreatedOn { get; set; } = DateTime.Now;
+
+        public int? PlanModifiedBy { get; set; }
+
+        public DateTime? PlanModifiedOn { get; set; }
+
+        public bool PlanActive { get; set; } = true;
+    }
+}
