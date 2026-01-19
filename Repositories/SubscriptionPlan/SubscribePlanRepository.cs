@@ -2,69 +2,73 @@
 {
     using Microsoft.EntityFrameworkCore;
     using XeniaRegistrationBackend.Dtos;
-    using XeniaRegistrationBackend.Models;
-    using XeniaTempleBackend.Models;
+    using XeniaRegistrationBackend.Models.Temple;
+    using XeniaRegistrationBackend.Models.Token;
 
     public class SubscribePlanRepository : ISubscribePlanRepository
     {
-        private readonly TempleDbContext _context;
+        private readonly TempleDbContext _tecontext;
+        private readonly TokenDbContext _tocontext;
 
-        public SubscribePlanRepository(TempleDbContext context)
+        public SubscribePlanRepository(TempleDbContext tecontext, TokenDbContext tocontext)
         {
-            _context = context;
+            _tecontext = tecontext;
+            _tocontext = tocontext;
         }
 
-        public async Task<int> CreateSubscribePlanAsync(SubscribePlanRequestDto request)
+
+        #region TEMPLE
+        public async Task<int> CreateTempleSubscribePlanAsync(SubscribePlanRequestDto request)
         {
             var plan = new TK_SubscribePlan
             {
-                CompanyId = request.CompanyId,
                 PlanName = request.PlanName,
                 PlanDescription = request.PlanDescription,
                 PlanPrice = request.PlanPrice,
                 PlanDurationDays = request.PlanDurationDays,
                 PlanUsers = request.PlanUsers,
-                PlanIsAddeOn = request.planIsAddeOn,
+                PlanIsAddOn = request.planIsAddOn,
                 PlanCreatedBy = 0,
+                PlanModifiedBy = 0,
+                PlanModifiedOn = DateTime.Now,
                 PlanActive = request.PlanActive
             };
 
-            _context.SubscribePlan.Add(plan);
-            await _context.SaveChangesAsync();
+            _tecontext.SubscribePlan.Add(plan);
+            await _tecontext.SaveChangesAsync();
 
             return plan.PlanId;
         }
 
-        public async Task<bool> CreateSubscribeUpdateAsync(int planId, SubscribePlanRequestDto request)
+        public async Task<bool> CreateTempleSubscribeUpdateAsync(int planId, SubscribePlanRequestDto request)
         {
-            var plan = await _context.SubscribePlan.FindAsync(planId);
+            var plan = await _tecontext.SubscribePlan.FindAsync(planId);
             if (plan == null) return false;
-
-            plan.CompanyId = request.CompanyId;
+        
             plan.PlanName = request.PlanName;
             plan.PlanDescription = request.PlanDescription;
             plan.PlanPrice = request.PlanPrice;
             plan.PlanDurationDays = request.PlanDurationDays;
             plan.PlanUsers = request.PlanUsers;
-            plan.PlanIsAddeOn = request.planIsAddeOn;
+            plan.PlanIsAddOn = request.planIsAddOn;
             plan.PlanActive = request.PlanActive;
             plan.PlanModifiedBy = 0;
             plan.PlanModifiedOn = DateTime.Now;
 
-            await _context.SaveChangesAsync();
+            await _tecontext.SaveChangesAsync();
             return true;
         }
 
-        public async Task<IEnumerable<SubscribePlanResponseDto>> GetAllSubscriptionPlanAsync()
+        public async Task<IEnumerable<SubscribePlanResponseDto>> GetAllTempleSubscriptionPlanAsync()
         {
-            return await _context.SubscribePlan
+            return await _tecontext.SubscribePlan
                 .Select(p => new SubscribePlanResponseDto
                 {
                     PlanId = p.PlanId,
-                    CompanyId = p.CompanyId,
                     PlanName = p.PlanName,
                     PlanDescription = p.PlanDescription,
                     PlanPrice = p.PlanPrice,
+                    PlanIsAddOn = p.PlanIsAddOn,
                     PlanDurationDays = p.PlanDurationDays,
                     PlanUsers = p.PlanUsers,
                     PlanActive = p.PlanActive
@@ -72,36 +76,33 @@
                 .ToListAsync();
         }
 
-        public async Task<SubscribePlanResponseDto?> GetSubscriptionPlanByIdAsync(int planId)
+        public async Task<SubscribePlanResponseDto?> GetSubscriptionTemplePlanByIdAsync(int planId)
         {
-            return await _context.SubscribePlan
+            return await _tecontext.SubscribePlan
                 .Where(p => p.PlanId == planId)
                 .Select(p => new SubscribePlanResponseDto
                 {
                     PlanId = p.PlanId,
-                    CompanyId = p.CompanyId,
                     PlanName = p.PlanName,
                     PlanDescription = p.PlanDescription,
                     PlanPrice = p.PlanPrice,
                     PlanDurationDays = p.PlanDurationDays,
                     PlanUsers = p.PlanUsers,
-                    PlanIsAddeOn = p.PlanIsAddeOn,
+                    PlanIsAddOn = p.PlanIsAddOn,
                     PlanActive = p.PlanActive
                 })
                 .FirstOrDefaultAsync();
         }
 
-
-        public async Task<int> CreateSubscriptionAsync(CompanySubscriptionCreateDto dto)
+        public async Task<int> CreateTempleSubscriptionAsync(CompanySubscriptionCreateDto dto)
         {
-            using var transaction = await _context.Database.BeginTransactionAsync();
+            using var transaction = await _tecontext.Database.BeginTransactionAsync();
 
             try
             {
-                var plan = await _context.SubscribePlan
+                var plan = await _tecontext.SubscribePlan
                     .FirstOrDefaultAsync(p =>
                         p.PlanId == dto.PlanId &&
-                        p.CompanyId == dto.CompanyId &&
                         p.PlanActive);
 
                 if (plan == null)
@@ -118,12 +119,12 @@
                     SubscriptionEndDate = endDate,
                     SubscriptionDays = plan.PlanDurationDays,
                     SubscriptionAmount = plan.PlanPrice,
-                    subscriptionUserCount = plan.PlanUsers,
+                    subscriptionUserCount = plan.PlanUsers,              
                     Status = "ACTIVE"
                 };
 
-                _context.CompanySubscriptions.Add(subscription);
-                await _context.SaveChangesAsync();
+                _tecontext.CompanySubscriptions.Add(subscription);
+                await _tecontext.SaveChangesAsync();
 
                 if (dto.Addons != null && dto.Addons.Any())
                 {
@@ -135,8 +136,8 @@
                         UserCount = a.UserCount
                     });
 
-                    _context.CompanySubscriptionAddon.AddRange(addons);
-                    await _context.SaveChangesAsync();
+                    _tecontext.CompanySubscriptionAddon.AddRange(addons);
+                    await _tecontext.SaveChangesAsync();
                 }
 
                 await transaction.CommitAsync();
@@ -149,7 +150,7 @@
             }
         }
 
-        public async Task<int> CreateAddonAsync(CompanySubscriptionAddonCreateDto dto)
+        public async Task<int> CreateTempleAddonAsync(CompanySubscriptionAddonCreateDto dto)
         {
             var addon = new TK_CompanySubscriptionAddon
             {
@@ -159,11 +160,53 @@
                 UserCount = dto.UserCount
             };
 
-            _context.CompanySubscriptionAddon.Add(addon);
-            await _context.SaveChangesAsync();
+            _tecontext.CompanySubscriptionAddon.Add(addon);
+            await _tecontext.SaveChangesAsync();
 
             return addon.SubAddonId;
         }
+
+
+        #endregion
+
+        #region TOKEN
+
+        public async Task<IEnumerable<xtm_SubscribePlan>> GetAllTokenSubscriptionPlanAsync()
+        {
+            return await _tocontext.SubscribePlans.ToListAsync();
+        }
+
+        public async Task<xtm_SubscribePlan?> GetSubscriptionTokenPlanByIdAsync(int planId)
+        {
+            return await _tocontext.SubscribePlans.FindAsync(planId);
+        }
+
+        public async Task<xtm_SubscribePlan> CreateTokenSubscribePlanAsync(xtm_SubscribePlan plan)
+        {
+            plan.PlanCreatedOn = DateTime.UtcNow;
+            _tocontext.SubscribePlans.Add(plan);
+            await _tocontext.SaveChangesAsync();
+            return plan;
+        }
+
+        public async Task CreateTokenSubscribeUpdateAsync(xtm_SubscribePlan plan)
+        {
+            plan.PlanModifiedOn = DateTime.UtcNow;
+            _tocontext.SubscribePlans.Update(plan);
+            await _tocontext.SaveChangesAsync();
+        }
+
+        public async Task DeleteAsync(int planId)
+        {
+            var plan = await _tocontext.SubscribePlans.FindAsync(planId);
+            if (plan != null)
+            {
+                _tocontext.SubscribePlans.Remove(plan);
+                await _tocontext.SaveChangesAsync();
+            }
+        }
+
+        #endregion
 
     }
 

@@ -1,11 +1,14 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using XeniaRegistrationBackend.Dtos;
 using XeniaRegistrationBackend.Repositories.CompanyRegistration;
 
 namespace XeniaRegistrationBackend.Controllers
 {
-    [ApiController]
+
+    [AllowAnonymous]
     [Route("api/company")]
+    [ApiController]
     public class CompanyRegistrationController : ControllerBase
     {
         private readonly ICompanyRegistrationRepository _repositoryCompanyRegistration;
@@ -15,10 +18,12 @@ namespace XeniaRegistrationBackend.Controllers
             _repositoryCompanyRegistration = repositoryCompanyRegistration;
         }
 
+        #region TEMPLE
+
 
         [HttpGet("temple")]
-        public async Task<IActionResult> GetAll()
-        => Ok(await _repositoryCompanyRegistration.GetAllCompaniesAsync());
+        public async Task<IActionResult> GetAllTempleCompany()
+        => Ok(await _repositoryCompanyRegistration.GetAllTempleCompaniesAsync());
 
 
         [HttpGet("temple/{id}")]
@@ -48,6 +53,18 @@ namespace XeniaRegistrationBackend.Controllers
                 Message = "Company registered successfully"
             });
         }
+
+        #endregion
+
+
+        #region TOKEN
+/*
+        [HttpGet("token")]
+        public async Task<IActionResult> GetAll()
+      => Ok(await _repositoryCompanyRegistration.GetAllTokenCompaniesAsync());
+
+*/
+        #endregion
     }
 
 }

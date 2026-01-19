@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace XeniaRegistrationBackend.Models
+namespace XeniaRegistrationBackend.Models.Temple
 {
     [Table("TK_CompanySubscriptionAddon", Schema = "dbo")]
     public class TK_CompanySubscriptionAddon

@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
-using XeniaTempleBackend.Models;
 
-namespace XeniaRegistrationBackend.Models
+namespace XeniaRegistrationBackend.Models.Temple
 {
     public class TempleDbContext : DbContext
     {

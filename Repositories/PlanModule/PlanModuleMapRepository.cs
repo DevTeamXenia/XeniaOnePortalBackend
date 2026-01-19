@@ -2,8 +2,7 @@
 {
     using Microsoft.EntityFrameworkCore;
     using XeniaRegistrationBackend.Dtos;
-    using XeniaRegistrationBackend.Models;
-    using XeniaTempleBackend.Models;
+    using XeniaRegistrationBackend.Models.Temple;
 
     public class PlanModuleMapRepository : IPlanModuleMapRepository
     {

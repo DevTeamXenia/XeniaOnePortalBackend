@@ -7,9 +7,13 @@ using Microsoft.OpenApi.Models;
 using System.Security.Claims;
 using System.Text;
 using XeniaRegistrationBackend.Models;
+using XeniaRegistrationBackend.Models.Temple;
 using XeniaRegistrationBackend.Repositories.Auth;
+using XeniaRegistrationBackend.Repositories.CompanyRegistration;
 using XeniaRegistrationBackend.Repositories.Module;
+using XeniaRegistrationBackend.Repositories.PlanModule;
 using XeniaRegistrationBackend.Repositories.Project;
+using XeniaRegistrationBackend.Repositories.SubscriptionPlan;
 using XeniaRegistrationBackend.Service.Common;
 
 var builder = WebApplication.CreateBuilder(args);
@@ -24,7 +28,7 @@ builder.Services.AddHttpClient();
 builder.Services.AddEndpointsApiExplorer();
 builder.Services.AddSwaggerGen(c =>
 {
-    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Xenia Temple API", Version = "v1" });
+    c.SwaggerDoc("v1", new OpenApiInfo { Title = "Xenia Registration API", Version = "v1" });
 
     c.AddSecurityDefinition("Bearer", new OpenApiSecurityScheme
     {
@@ -79,10 +83,16 @@ builder.Services.AddDbContext<ApplicationDbContext>(options =>
 builder.Services.AddDbContext<TempleDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultTempleConnection")));
 
+builder.Services.AddDbContext<TokenDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultTokenConnection")));
+
 
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
+builder.Services.AddScoped<ICompanyRegistrationRepository, CompanyRegistrationRepository>();
 builder.Services.AddScoped<IProjectRepository, ProjectRepository>();
 builder.Services.AddScoped<IModuleRepository, ModuleRepository>();
+builder.Services.AddScoped<ISubscribePlanRepository, SubscribePlanRepository>();
+builder.Services.AddScoped<IPlanModuleMapRepository, PlanModuleMapRepository>();
 
 
 
@@ -146,7 +156,6 @@ app.UseSwagger();
 app.UseSwaggerUI();
 
 
-app.UseHttpsRedirection();
 app.UseStaticFiles();
 app.UseRouting();
 

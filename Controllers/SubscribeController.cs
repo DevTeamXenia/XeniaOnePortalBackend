@@ -1,12 +1,16 @@
-﻿using Microsoft.AspNetCore.Mvc;
+﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Mvc;
 using XeniaRegistrationBackend.Dtos;
+using XeniaRegistrationBackend.Models.Temple;
 using XeniaRegistrationBackend.Repositories.Module;
 using XeniaRegistrationBackend.Repositories.PlanModule;
 using XeniaRegistrationBackend.Repositories.SubscriptionPlan;
-using XeniaTempleBackend.Models;
 
 namespace XeniaRegistrationBackend.Controllers
 {
+    [Authorize]
+    [ApiController]
+    [Route("api/subscribe")]
     public class SubscribeController : ControllerBase
     {
         private readonly IModuleRepository _moduleRepository;
@@ -20,10 +24,11 @@ namespace XeniaRegistrationBackend.Controllers
             _planModuleMapRepository = planModuleMapRepository;
         }
 
+        #region TEMPLE
 
         #region MODULE
 
-        [HttpPost]
+        [HttpPost("module")]
         public async Task<IActionResult> CreateModule([FromBody] TK_Module request)
         {
             var id = await _moduleRepository.CreateModuleAsync(request);
@@ -31,7 +36,7 @@ namespace XeniaRegistrationBackend.Controllers
         }
 
 
-        [HttpPut("{id}")]
+        [HttpPut("module/{id}")]
         public async Task<IActionResult> UpdateModule(int id, [FromBody] TK_Module request)
         {
             var updated = await _moduleRepository.UpdateModuleAsync(id, request);
@@ -41,14 +46,14 @@ namespace XeniaRegistrationBackend.Controllers
         }
 
 
-        [HttpGet]
+        [HttpGet("module")]
         public async Task<IActionResult> GetAllModule()
         {
             return Ok(await _moduleRepository.GetAllModuleAsync());
         }
 
 
-        [HttpGet("{id}")]
+        [HttpGet("module/{id}")]
         public async Task<IActionResult> GetModuleById(int id)
         {
             var module = await _moduleRepository.GetByIdModuleAsync(id);
@@ -61,19 +66,19 @@ namespace XeniaRegistrationBackend.Controllers
 
         #region SUBSCRIBTIONPLAN
 
-        [HttpPost]
+        [HttpPost("plan")]
         public async Task<IActionResult> CreateSubscribePlan([FromBody] SubscribePlanRequestDto request)
         {
-            var id = await _subscribePlanRepository.CreateSubscribePlanAsync(request);
+            var id = await _subscribePlanRepository.CreateTempleSubscribePlanAsync(request);
 
             return Ok(new { Message = "Plan created successfully", PlanId = id });
         }
 
 
-        [HttpPut("{id}")]
+        [HttpPut("plan/{id}")]
         public async Task<IActionResult> CreateSubscribeUpdate(int id, [FromBody] SubscribePlanRequestDto request)
         {
-            var updated = await _subscribePlanRepository.CreateSubscribeUpdateAsync(id, request);
+            var updated = await _subscribePlanRepository.CreateTempleSubscribeUpdateAsync(id, request);
 
             if (!updated) return NotFound("Plan not found");
 
@@ -81,17 +86,17 @@ namespace XeniaRegistrationBackend.Controllers
         }
 
         
-        [HttpGet]
+        [HttpGet("plan")]
         public async Task<IActionResult> GetAllSubscriptionPlan()
         {
-            return Ok(await _subscribePlanRepository.GetAllSubscriptionPlanAsync());
+            return Ok(await _subscribePlanRepository.GetAllTempleSubscriptionPlanAsync());
         }
 
   
-        [HttpGet("{id}")]
+        [HttpGet("plan/{id}")]
         public async Task<IActionResult> GetlSubscriptionPlanById(int id)
         {
-            var plan = await _subscribePlanRepository.GetSubscriptionPlanByIdAsync(id);
+            var plan = await _subscribePlanRepository.GetSubscriptionTemplePlanByIdAsync(id);
             if (plan == null) return NotFound("Plan not found");
 
             return Ok(plan);
@@ -101,7 +106,7 @@ namespace XeniaRegistrationBackend.Controllers
 
         #region SUBSCRIBTIONPLANMODULE
 
-        [HttpPost]
+        [HttpPost("planModuleMap")]
         public async Task<IActionResult> CreatePlanModule([FromBody] TK_PlanModuleMap request)
         {
             var id = await _planModuleMapRepository.CreatePlanModuleAsync(request);
@@ -113,7 +118,7 @@ namespace XeniaRegistrationBackend.Controllers
         }
 
       
-        [HttpPut("{id}")]
+        [HttpPut("planModuleMap/{id}")]
         public async Task<IActionResult> UpdatePlanModule(int id, [FromBody] TK_PlanModuleMap request)
         {
             var updated = await _planModuleMapRepository.UpdatePlanModuleAsync(id, request);
@@ -123,7 +128,7 @@ namespace XeniaRegistrationBackend.Controllers
         }
 
        
-        [HttpGet("{id}")]
+        [HttpGet("planModuleMap/{id}")]
         public async Task<IActionResult> GetPlanModuleById(int id)
         {
             var data = await _planModuleMapRepository.GetPlanModuleByIdAsync(id);
@@ -132,7 +137,7 @@ namespace XeniaRegistrationBackend.Controllers
             return Ok(data);
         }
 
-        [HttpGet]
+        [HttpGet("planModuleMap")]
         public async Task<IActionResult> GetAll()
         {
             var list = await _planModuleMapRepository.GetAllAsync();
@@ -146,7 +151,7 @@ namespace XeniaRegistrationBackend.Controllers
         [HttpPost]
         public async Task<IActionResult> CreateSubscription([FromBody] CompanySubscriptionCreateDto dto)
         {
-            var subId = await _subscribePlanRepository.CreateSubscriptionAsync(dto);
+            var subId = await _subscribePlanRepository.CreateTempleSubscriptionAsync(dto);
 
             return Ok(new
             {
@@ -159,7 +164,7 @@ namespace XeniaRegistrationBackend.Controllers
         [HttpPost("addon")]
         public async Task<IActionResult> CreateAddon([FromBody] CompanySubscriptionAddonCreateDto dto)
         {
-            var addonId = await _subscribePlanRepository.CreateAddonAsync(dto);
+            var addonId = await _subscribePlanRepository.CreateTempleAddonAsync(dto);
 
             return Ok(new
             {
@@ -167,6 +172,8 @@ namespace XeniaRegistrationBackend.Controllers
                 addonId = addonId
             });
         }
+
+        #endregion
 
         #endregion
 

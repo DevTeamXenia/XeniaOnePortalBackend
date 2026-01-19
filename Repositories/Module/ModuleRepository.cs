@@ -1,8 +1,7 @@
 ﻿namespace XeniaRegistrationBackend.Repositories.Module
 {
     using Microsoft.EntityFrameworkCore;
-    using XeniaRegistrationBackend.Models;
-    using XeniaTempleBackend.Models;
+    using XeniaRegistrationBackend.Models.Temple;
 
     public class ModuleRepository : IModuleRepository
     {

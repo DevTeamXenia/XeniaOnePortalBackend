@@ -1,4 +1,4 @@
-﻿using XeniaTempleBackend.Models;
+﻿using XeniaRegistrationBackend.Models.Temple;
 
 namespace XeniaRegistrationBackend.Repositories.Module
 {

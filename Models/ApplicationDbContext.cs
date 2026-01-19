@@ -1,5 +1,6 @@
 ﻿
 using Microsoft.EntityFrameworkCore;
+using XeniaRegistrationBackend.Models.Temple;
 
 namespace XeniaRegistrationBackend.Models
 {

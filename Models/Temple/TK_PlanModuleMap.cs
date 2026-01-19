@@ -1,7 +1,7 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 
-namespace XeniaTempleBackend.Models
+namespace XeniaRegistrationBackend.Models.Temple
 {
     [Table("TK_PlanModuleMap", Schema = "dbo")]
     public class TK_PlanModuleMap

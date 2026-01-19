@@ -65,11 +65,7 @@ namespace XeniaRentalApi.Controllers
             }
         }
 
-
-
-
-  
-
+ 
 
     }
 }

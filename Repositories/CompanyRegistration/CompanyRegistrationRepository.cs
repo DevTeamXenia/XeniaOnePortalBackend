@@ -1,7 +1,6 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using XeniaRegistrationBackend.Dtos;
-using XeniaRegistrationBackend.Models;
-using XeniaTempleBackend.Models;
+using XeniaRegistrationBackend.Models.Temple;
 
 namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 {
@@ -94,7 +93,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
             }
         }
 
-        public async Task<List<CompanyListDto>> GetAllCompaniesAsync()
+        public async Task<List<CompanyListDto>> GetAllTempleCompaniesAsync()
         {
             var companies = await _context.Company.ToListAsync();
 
@@ -137,8 +136,8 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     CompanyId = c.CompanyId,
                     CompanyName = c.CompanyName,
                     CompanyType = c.CompanyType,
-                    District = c.DistrictName,
-                    State = c.StateName,
+                    PhoneNumber = c.CompanyPhone1,
+                    Address = c.CompanyAddress,
                     Subscription = subDto
                 });
             }
@@ -188,8 +187,8 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     CompanyId = company.CompanyId,
                     CompanyName = company.CompanyName,
                     CompanyType = company.CompanyType,
-                    District = company.DistrictName,
-                    State = company.StateName,
+                    PhoneNumber = company.CompanyPhone1,
+                    Address = company.CompanyAddress,
                     Subscription = subDto
                 },
                 Settings = await _context.CompanySetting
