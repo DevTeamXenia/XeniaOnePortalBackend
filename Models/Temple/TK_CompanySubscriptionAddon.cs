@@ -13,6 +13,9 @@ namespace XeniaRegistrationBackend.Models.Temple
         [Column("planId")]
         public int PlanId { get; set; }
 
+        [Column("mainPlanId")]
+        public int MainPlanId { get; set; }
+
         [Column("companyId")]
         public int CompanyId { get; set; }
 
@@ -21,5 +24,8 @@ namespace XeniaRegistrationBackend.Models.Temple
 
         [Column("userCount")]
         public int UserCount { get; set; }
+
+        [Column("status")]
+        public string Status { get; set; }
     }
 }

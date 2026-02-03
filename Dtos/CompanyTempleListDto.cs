@@ -1,6 +1,6 @@
 ﻿namespace XeniaRegistrationBackend.Dtos
 {
-    public class CompanyListDto
+    public class CompanyTempleListDto
     {
         public int CompanyId { get; set; }
         public string CompanyName { get; set; } = null!;
@@ -8,7 +8,7 @@
         public string? PhoneNumber { get; set; } = null!;
         public string? Address { get; set; } = null!;
 
-        public SubscriptionSummaryDto? Subscription { get; set; }
+        public SubscriptionTempleSummaryDto? Subscription { get; set; }
     }
 
 }

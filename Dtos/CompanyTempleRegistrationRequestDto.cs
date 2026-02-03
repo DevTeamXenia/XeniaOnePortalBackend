@@ -1,6 +1,6 @@
 ﻿namespace XeniaRegistrationBackend.Dtos
 {
-    public class CompanyRegistrationRequestDto
+    public class CompanyTempleRegistrationRequestDto
     {
         public string CompanyName { get; set; } = null!;
         public string? CompanyAddress { get; set; }

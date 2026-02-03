@@ -19,7 +19,7 @@ namespace XeniaRegistrationBackend.Models.Token
 
         public int PlanDurationDays { get; set; }
 
-        public int? PlanDep { get; set; }
+        public int PlanDep { get; set; }
 
         public bool PlanIsAddOn { get; set; }
 

@@ -1,11 +1,10 @@
 ﻿namespace XeniaRegistrationBackend.Dtos
 {
-    public class CompanySubscriptionAddonCreateDto
+    public class CompanyTempleSubscriptionCreateDto
     {
         public int PlanId { get; set; }
         public int CompanyId { get; set; }
-        public decimal Amount { get; set; }
-        public int UserCount { get; set; }
+        public List<CompanyTempleSubscriptionAddonCreateDto>? Addons { get; set; }
     }
 
 }

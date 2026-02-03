@@ -7,25 +7,28 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
     {
 
         #region TEMPLE
-        Task<int> CreateTempleSubscribePlanAsync(SubscribePlanRequestDto request);
-        Task<bool> CreateTempleSubscribeUpdateAsync(int planId, SubscribePlanRequestDto request);
-        Task<IEnumerable<SubscribePlanResponseDto>> GetAllTempleSubscriptionPlanAsync();
-        Task<SubscribePlanResponseDto?> GetSubscriptionTemplePlanByIdAsync(int planId);
+        Task<int> CreateTempleSubscribePlanAsync(SubscribeTemplePlanRequestDto request);
+        Task<bool> CreateTempleSubscribeUpdateAsync(int planId, SubscribeTemplePlanRequestDto request);
+        Task<IEnumerable<SubscribeTemplePlanResponseDto>> GetAllTempleSubscriptionPlanAsync();
+        Task<SubscribeTemplePlanResponseDto?> GetSubscriptionTemplePlanByIdAsync(int planId);
 
 
 
-        Task<int> CreateTempleSubscriptionAsync(CompanySubscriptionCreateDto dto);
-        Task<int> CreateTempleAddonAsync(CompanySubscriptionAddonCreateDto dto);
+        Task<int> CreateTempleSubscriptionAsync(CompanyTempleSubscriptionCreateDto dto);
+        Task<int> CreateTempleAddonAsync(CompanyTempleSubscriptionAddonCreateDto dto);
 
         #endregion
 
 
 
         #region TOKEN
-        Task<IEnumerable<xtm_SubscribePlan>> GetAllTokenSubscriptionPlanAsync();
-        Task<xtm_SubscribePlan?> GetSubscriptionTokenPlanByIdAsync(int planId);
-        Task<xtm_SubscribePlan> CreateTokenSubscribePlanAsync(xtm_SubscribePlan plan);
-        Task CreateTokenSubscribeUpdateAsync(xtm_SubscribePlan plan);
+        Task<int> CreateTokenSubscribePlanAsync(SubscribeTokenPlanRequestDto request);
+        Task<bool> CreateTokenSubscribeUpdateAsync(int planId, SubscribeTokenPlanRequestDto request);
+        Task<IEnumerable<SubscribeTokenPlanResponseDto>> GetAllTokenSubscriptionPlanAsync();
+        Task<SubscribeTokenPlanResponseDto?> GetSubscriptionTokenPlanByIdAsync(int planId);
+
+        Task<int> CreateTokenSubscriptionAsync(CompanyTokenSubscriptionCreateDto dto);
+        Task<int> CreateTokenAddonAsync(CompanyTokenSubscriptionAddonCreateDto dto);
 
         #endregion
     }

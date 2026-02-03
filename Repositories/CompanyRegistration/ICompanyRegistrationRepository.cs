@@ -4,11 +4,22 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 {
     public interface ICompanyRegistrationRepository
     {
-        Task<int> RegisterCompanyAsync(CompanyRegistrationRequestDto request);
-        Task<List<CompanyListDto>> GetAllTempleCompaniesAsync();
-        Task<CompanyDetailDto?> GetCompanyByIdAsync(int companyId);
-        Task UpdateCompanyAsync(UpdateCompanyDto dto);
+        Task<int> RegisterTempleCompanyAsync(CompanyTempleRegistrationRequestDto request);
+        Task<List<CompanyTempleListDto>> GetAllTempleCompaniesAsync();
+        Task<CompanyTempleDetailDto?> GetTempleCompanyByIdAsync(int companyId);
+        Task UpdateTempleCompanyAsync(UpdateTempleCompanyDto dto);
 
-     //   Task<List<CompanyListDto>> GetAllTokenCompaniesAsync();
+
+        Task<int> RegisterTokenCompanyAsync(CompanyTokenRegistrationRequestDto request);
+        Task<List<CompanyTokenListDto>> GetAllTokenCompaniesAsync();
+        Task<CompanyTokenDetailDto?> GetTokenCompanyByIdAsync(int companyId);
+        Task UpdateTokenCompanyAsync(UpdateTokenCompanyDto dto);
+
+
+
+        Task<int> RegisterRentalCompanyAsync(CompanyRentalRegistrationRequestDto request);
+        Task<List<CompanyRentalListDto>> GetAllRentalCompaniesAsync();
+        Task<CompanyRentalDetailDto?> GetRentalCompanyByIdAsync(int companyId);
+        Task UpdateRentalCompanyAsync(UpdateRentalCompanyDto dto);
     }
 }

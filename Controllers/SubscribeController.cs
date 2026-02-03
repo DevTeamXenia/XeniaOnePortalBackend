@@ -28,7 +28,7 @@ namespace XeniaRegistrationBackend.Controllers
 
         #region MODULE
 
-        [HttpPost("module")]
+        [HttpPost("temple/module")]
         public async Task<IActionResult> CreateModule([FromBody] TK_Module request)
         {
             var id = await _moduleRepository.CreateModuleAsync(request);
@@ -36,7 +36,7 @@ namespace XeniaRegistrationBackend.Controllers
         }
 
 
-        [HttpPut("module/{id}")]
+        [HttpPut("temple/module/{id}")]
         public async Task<IActionResult> UpdateModule(int id, [FromBody] TK_Module request)
         {
             var updated = await _moduleRepository.UpdateModuleAsync(id, request);
@@ -46,14 +46,14 @@ namespace XeniaRegistrationBackend.Controllers
         }
 
 
-        [HttpGet("module")]
+        [HttpGet("temple/module")]
         public async Task<IActionResult> GetAllModule()
         {
             return Ok(await _moduleRepository.GetAllModuleAsync());
         }
 
 
-        [HttpGet("module/{id}")]
+        [HttpGet("temple/module/{id}")]
         public async Task<IActionResult> GetModuleById(int id)
         {
             var module = await _moduleRepository.GetByIdModuleAsync(id);
@@ -66,8 +66,8 @@ namespace XeniaRegistrationBackend.Controllers
 
         #region SUBSCRIBTIONPLAN
 
-        [HttpPost("plan")]
-        public async Task<IActionResult> CreateSubscribePlan([FromBody] SubscribePlanRequestDto request)
+        [HttpPost("temple/plan")]
+        public async Task<IActionResult> CreateTempleSubscribePlan([FromBody] SubscribeTemplePlanRequestDto request)
         {
             var id = await _subscribePlanRepository.CreateTempleSubscribePlanAsync(request);
 
@@ -75,8 +75,8 @@ namespace XeniaRegistrationBackend.Controllers
         }
 
 
-        [HttpPut("plan/{id}")]
-        public async Task<IActionResult> CreateSubscribeUpdate(int id, [FromBody] SubscribePlanRequestDto request)
+        [HttpPut("temple/plan/{id}")]
+        public async Task<IActionResult> CreateTempleSubscribeUpdate(int id, [FromBody] SubscribeTemplePlanRequestDto request)
         {
             var updated = await _subscribePlanRepository.CreateTempleSubscribeUpdateAsync(id, request);
 
@@ -86,17 +86,55 @@ namespace XeniaRegistrationBackend.Controllers
         }
 
         
-        [HttpGet("plan")]
-        public async Task<IActionResult> GetAllSubscriptionPlan()
+        [HttpGet("temple/plan")]
+        public async Task<IActionResult> GetAllTempleSubscriptionPlan()
         {
             return Ok(await _subscribePlanRepository.GetAllTempleSubscriptionPlanAsync());
         }
 
   
-        [HttpGet("plan/{id}")]
-        public async Task<IActionResult> GetlSubscriptionPlanById(int id)
+        [HttpGet("temple/plan/{id}")]
+        public async Task<IActionResult> GetTempleSubscriptionPlanById(int id)
         {
             var plan = await _subscribePlanRepository.GetSubscriptionTemplePlanByIdAsync(id);
+            if (plan == null) return NotFound("Plan not found");
+
+            return Ok(plan);
+        }
+
+
+
+        [HttpPost("token/plan")]
+        public async Task<IActionResult> CreateTokenSubscribePlan([FromBody] SubscribeTokenPlanRequestDto request)
+        {
+            var id = await _subscribePlanRepository.CreateTokenSubscribePlanAsync(request);
+
+            return Ok(new { Message = "Plan created successfully", PlanId = id });
+        }
+
+
+        [HttpPut("token/plan/{id}")]
+        public async Task<IActionResult> CreateTokenSubscribeUpdate(int id, [FromBody] SubscribeTokenPlanRequestDto request)
+        {
+            var updated = await _subscribePlanRepository.CreateTokenSubscribeUpdateAsync(id, request);
+
+            if (!updated) return NotFound("Plan not found");
+
+            return Ok(new { Message = "Plan updated successfully" });
+        }
+
+
+        [HttpGet("token/plan")]
+        public async Task<IActionResult> GetAllTokenSubscriptionPlan()
+        {
+            return Ok(await _subscribePlanRepository.GetAllTokenSubscriptionPlanAsync());
+        }
+
+
+        [HttpGet("token/plan/{id}")]
+        public async Task<IActionResult> GetTokenSubscriptionPlanById(int id)
+        {
+            var plan = await _subscribePlanRepository.GetSubscriptionTokenPlanByIdAsync(id);
             if (plan == null) return NotFound("Plan not found");
 
             return Ok(plan);
@@ -148,8 +186,8 @@ namespace XeniaRegistrationBackend.Controllers
 
         #region SUBSCRIBTIONRENEW
 
-        [HttpPost]
-        public async Task<IActionResult> CreateSubscription([FromBody] CompanySubscriptionCreateDto dto)
+        [HttpPost("temple/renew")]
+        public async Task<IActionResult> CreateTempleSubscription([FromBody] CompanyTempleSubscriptionCreateDto dto)
         {
             var subId = await _subscribePlanRepository.CreateTempleSubscriptionAsync(dto);
 
@@ -161,10 +199,36 @@ namespace XeniaRegistrationBackend.Controllers
         }
 
 
-        [HttpPost("addon")]
-        public async Task<IActionResult> CreateAddon([FromBody] CompanySubscriptionAddonCreateDto dto)
+        [HttpPost("temple/addon")]
+        public async Task<IActionResult> CreateTempleAddon([FromBody] CompanyTempleSubscriptionAddonCreateDto dto)
         {
             var addonId = await _subscribePlanRepository.CreateTempleAddonAsync(dto);
+
+            return Ok(new
+            {
+                status = "success",
+                addonId = addonId
+            });
+        }
+
+
+        [HttpPost("token/renew")]
+        public async Task<IActionResult> CreateTokenSubscription([FromBody] CompanyTokenSubscriptionCreateDto dto)
+        {
+            var subId = await _subscribePlanRepository.CreateTokenSubscriptionAsync(dto);
+
+            return Ok(new
+            {
+                status = "success",
+                subscriptionId = subId
+            });
+        }
+
+
+        [HttpPost("token/addon")]
+        public async Task<IActionResult> CreateTokenAddon([FromBody] CompanyTokenSubscriptionAddonCreateDto dto)
+        {
+            var addonId = await _subscribePlanRepository.CreateTokenAddonAsync(dto);
 
             return Ok(new
             {

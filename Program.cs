@@ -7,6 +7,7 @@ using Microsoft.OpenApi.Models;
 using System.Security.Claims;
 using System.Text;
 using XeniaRegistrationBackend.Models;
+using XeniaRegistrationBackend.Models.Rental;
 using XeniaRegistrationBackend.Models.Temple;
 using XeniaRegistrationBackend.Repositories.Auth;
 using XeniaRegistrationBackend.Repositories.CompanyRegistration;
@@ -85,6 +86,9 @@ builder.Services.AddDbContext<TempleDbContext>(options =>
 
 builder.Services.AddDbContext<TokenDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultTokenConnection")));
+
+builder.Services.AddDbContext<RentalDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultRentalConnection")));
 
 
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
