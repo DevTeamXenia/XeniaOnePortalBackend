@@ -15,10 +15,6 @@ namespace XeniaRegistrationBackend.Models.Token
 
         public string? PlanDescription { get; set; }
 
-        public decimal PlanPrice { get; set; }
-
-        public int PlanDurationDays { get; set; }
-
         public int PlanDep { get; set; }
 
         public bool PlanIsAddOn { get; set; }
@@ -32,5 +28,7 @@ namespace XeniaRegistrationBackend.Models.Token
         public DateTime? PlanModifiedOn { get; set; }
 
         public bool PlanActive { get; set; }
+        public virtual ICollection<xtm_SubscribePlanDuration> PlanDurations { get; set; }
+        = new List<xtm_SubscribePlanDuration>();
     }
 }

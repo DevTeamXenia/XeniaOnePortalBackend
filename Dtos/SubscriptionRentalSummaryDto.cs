@@ -8,5 +8,6 @@
         public DateTime EndDate { get; set; }
         public decimal Amount { get; set; }
         public string PlanName { get; set; } = null!;
+        public int DurationDays { get; set; }
     }
 }

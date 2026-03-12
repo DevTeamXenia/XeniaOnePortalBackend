@@ -10,6 +10,7 @@ namespace XeniaRegistrationBackend.Models.Temple
 
         public DbSet<xtm_Company> Company { get; set; }
         public DbSet<xtm_SubscribePlan> SubscribePlans { get; set; }
+        public DbSet<xtm_SubscribePlanDuration> SubscribePlanDuration { get; set; }
         public DbSet<xtm_CompanySubscription> CompanySubscriptions { get; set; }
         public DbSet<xtm_CompanySubscriptionAddon> CompanySubscriptionAddon { get; set; }
         public DbSet<xtm_CompanySettings> CompanySettings { get; set; }

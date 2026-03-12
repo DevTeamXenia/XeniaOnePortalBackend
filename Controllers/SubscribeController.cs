@@ -1,6 +1,7 @@
 ﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using XeniaRegistrationBackend.Dtos;
+using XeniaRegistrationBackend.Models;
 using XeniaRegistrationBackend.Models.Temple;
 using XeniaRegistrationBackend.Repositories.Module;
 using XeniaRegistrationBackend.Repositories.PlanModule;
@@ -24,22 +25,22 @@ namespace XeniaRegistrationBackend.Controllers
             _planModuleMapRepository = planModuleMapRepository;
         }
 
-        #region TEMPLE
+  
 
         #region MODULE
 
         [HttpPost("temple/module")]
-        public async Task<IActionResult> CreateModule([FromBody] TK_Module request)
+        public async Task<IActionResult> CreateTempleModule([FromBody] TK_Module request)
         {
-            var id = await _moduleRepository.CreateModuleAsync(request);
+            var id = await _moduleRepository.CreateTempleModuleAsync(request);
             return Ok(new { Message = "Module created successfully", ModuleId = id });
         }
 
 
         [HttpPut("temple/module/{id}")]
-        public async Task<IActionResult> UpdateModule(int id, [FromBody] TK_Module request)
+        public async Task<IActionResult> UpdateTempleModule(int id, [FromBody] TK_Module request)
         {
-            var updated = await _moduleRepository.UpdateModuleAsync(id, request);
+            var updated = await _moduleRepository.UpdateTempleModuleAsync(id, request);
             if (!updated) return NotFound("Module not found");
 
             return Ok(new { Message = "Module updated successfully" });
@@ -47,22 +48,60 @@ namespace XeniaRegistrationBackend.Controllers
 
 
         [HttpGet("temple/module")]
-        public async Task<IActionResult> GetAllModule()
+        public async Task<IActionResult> GetAllTempleModule()
         {
-            return Ok(await _moduleRepository.GetAllModuleAsync());
+            return Ok(await _moduleRepository.GetAllTempleModuleAsync());
         }
 
 
         [HttpGet("temple/module/{id}")]
-        public async Task<IActionResult> GetModuleById(int id)
+        public async Task<IActionResult> GetTempleModuleById(int id)
         {
-            var module = await _moduleRepository.GetByIdModuleAsync(id);
+            var module = await _moduleRepository.GetByIdTempleModuleAsync(id);
             if (module == null) return NotFound("Module not found");
 
             return Ok(module);
         }
 
+
+
+        [HttpPost("rental/module")]
+        public async Task<IActionResult> CreateRentalModule([FromBody] XRS_Module request)
+        {
+            var id = await _moduleRepository.CreateRentalModuleAsync(request);
+            return Ok(new { Message = "Module created successfully", ModuleId = id });
+        }
+
+
+        [HttpPut("rental/module/{id}")]
+        public async Task<IActionResult> UpdateRentalModule(int id, [FromBody] XRS_Module request)
+        {
+            var updated = await _moduleRepository.UpdateRentalModuleAsync(id, request);
+            if (!updated) return NotFound("Module not found");
+
+            return Ok(new { Message = "Module updated successfully" });
+        }
+
+
+        [HttpGet("rental/module")]
+        public async Task<IActionResult> GetRentalAllModule()
+        {
+            return Ok(await _moduleRepository.GetAllRentalModuleAsync());
+        }
+
+
+        [HttpGet("rental/module/{id}")]
+        public async Task<IActionResult> GetRentalModuleById(int id)
+        {
+            var module = await _moduleRepository.GetByIdRentalModuleAsync(id);
+            if (module == null) return NotFound("Module not found");
+
+            return Ok(module);
+        }
+
+
         #endregion
+
 
         #region SUBSCRIBTIONPLAN
 
@@ -140,14 +179,91 @@ namespace XeniaRegistrationBackend.Controllers
             return Ok(plan);
         }
 
+
+
+        [HttpPost("rental/plan")]
+        public async Task<IActionResult> CreateRentalSubscribePlan([FromBody] SubscribeRentalPlanRequestDto request)
+        {
+            var id = await _subscribePlanRepository.CreateRentalSubscribePlanAsync(request);
+
+            return Ok(new { Message = "Plan created successfully", PlanId = id });
+        }
+
+
+        [HttpPut("rental/plan/{id}")]
+        public async Task<IActionResult> CreateRentalSubscribeUpdate(int id, [FromBody] SubscribeRentalPlanRequestDto request)
+        {
+            var updated = await _subscribePlanRepository.CreateRentalSubscribeUpdateAsync(id, request);
+
+            if (!updated) return NotFound("Plan not found");
+
+            return Ok(new { Message = "Plan updated successfully" });
+        }
+
+
+        [HttpGet("rental/plan")]
+        public async Task<IActionResult> GetAllRentalSubscriptionPlan()
+        {
+            return Ok(await _subscribePlanRepository.GetAllRentalSubscriptionPlanAsync());
+        }
+
+
+        [HttpGet("rental/plan/{id}")]
+        public async Task<IActionResult> GetRentalSubscriptionPlanById(int id)
+        {
+            var plan = await _subscribePlanRepository.GetSubscriptionRentalPlanByIdAsync(id);
+            if (plan == null) return NotFound("Plan not found");
+
+            return Ok(plan);
+        }
+
+
+
+        [HttpPost("ticket/plan")]
+        public async Task<IActionResult> CreateTicketSubscribePlan([FromBody] SubscribeTicketPlanRequestDto request)
+        {
+            var id = await _subscribePlanRepository.CreateTicketSubscribePlanAsync(request);
+
+            return Ok(new { Message = "Plan created successfully", PlanId = id });
+        }
+
+
+        [HttpPut("ticket/plan/{id}")]
+        public async Task<IActionResult> CreateTicketSubscribeUpdate(int id, [FromBody] SubscribeTicketPlanRequestDto request)
+        {
+            var updated = await _subscribePlanRepository.CreateTicketSubscribeUpdateAsync(id, request);
+
+            if (!updated) return NotFound("Plan not found");
+
+            return Ok(new { Message = "Plan updated successfully" });
+        }
+
+
+        [HttpGet("ticket/plan")]
+        public async Task<IActionResult> GetAllTicketSubscriptionPlan()
+        {
+            return Ok(await _subscribePlanRepository.GetAllTicketSubscriptionPlanAsync());
+        }
+
+
+        [HttpGet("ticket/plan/{id}")]
+        public async Task<IActionResult> GetTicketSubscriptionPlanById(int id)
+        {
+            var plan = await _subscribePlanRepository.GetSubscriptionTicketPlanByIdAsync(id);
+            if (plan == null) return NotFound("Plan not found");
+
+            return Ok(plan);
+        }
+
         #endregion
+
 
         #region SUBSCRIBTIONPLANMODULE
 
-        [HttpPost("planModuleMap")]
-        public async Task<IActionResult> CreatePlanModule([FromBody] TK_PlanModuleMap request)
+        [HttpPost("temple/planModuleMap")]
+        public async Task<IActionResult> CreateTemplePlanModule([FromBody] TK_PlanModuleMap request)
         {
-            var id = await _planModuleMapRepository.CreatePlanModuleAsync(request);
+            var id = await _planModuleMapRepository.CreateTemplePlanModuleAsync(request);
             return Ok(new
             {
                 Message = "Module mapped to plan successfully",
@@ -156,33 +272,75 @@ namespace XeniaRegistrationBackend.Controllers
         }
 
       
-        [HttpPut("planModuleMap/{id}")]
-        public async Task<IActionResult> UpdatePlanModule(int id, [FromBody] TK_PlanModuleMap request)
+        [HttpPut("temple/planModuleMap/{id}")]
+        public async Task<IActionResult> UpdateTemplePlanModule(int id, [FromBody] TK_PlanModuleMap request)
         {
-            var updated = await _planModuleMapRepository.UpdatePlanModuleAsync(id, request);
+            var updated = await _planModuleMapRepository.UpdateTemplePlanModuleAsync(id, request);
             if (!updated) return NotFound("Mapping not found");
 
             return Ok(new { Message = "Mapping updated successfully" });
         }
 
        
-        [HttpGet("planModuleMap/{id}")]
-        public async Task<IActionResult> GetPlanModuleById(int id)
+        [HttpGet("temple/planModuleMap/{id}")]
+        public async Task<IActionResult> GetTemplePlanModuleById(int id)
         {
-            var data = await _planModuleMapRepository.GetPlanModuleByIdAsync(id);
+            var data = await _planModuleMapRepository.GetTemplePlanModuleByIdAsync(id);
             if (data == null) return NotFound("Mapping not found");
 
             return Ok(data);
         }
 
-        [HttpGet("planModuleMap")]
-        public async Task<IActionResult> GetAll()
+
+        [HttpGet("temple/planModuleMap")]
+        public async Task<IActionResult> GetTempleAll()
         {
-            var list = await _planModuleMapRepository.GetAllAsync();
+            var list = await _planModuleMapRepository.GetTempleAllAsync();
+            return Ok(list);
+        }
+
+
+        [HttpPost("rental/planModuleMap")]
+        public async Task<IActionResult> CreateRentalPlanModule([FromBody] XRS_PlanModuleMap request)
+        {
+            var id = await _planModuleMapRepository.CreateRentalPlanModuleAsync(request);
+            return Ok(new
+            {
+                Message = "Module mapped to plan successfully",
+                SubPlanId = id
+            });
+        }
+
+
+        [HttpPut("rental/planModuleMap/{id}")]
+        public async Task<IActionResult> UpdateRentalPlanModule(int id, [FromBody] XRS_PlanModuleMap request)
+        {
+            var updated = await _planModuleMapRepository.UpdateRentalPlanModuleAsync(id, request);
+            if (!updated) return NotFound("Mapping not found");
+
+            return Ok(new { Message = "Mapping updated successfully" });
+        }
+
+
+        [HttpGet("rental/planModuleMap/{id}")]
+        public async Task<IActionResult> GetRentalPlanModuleById(int id)
+        {
+            var data = await _planModuleMapRepository.GetRentalPlanModuleByIdAsync(id);
+            if (data == null) return NotFound("Mapping not found");
+
+            return Ok(data);
+        }
+
+
+        [HttpGet("rental/planModuleMap")]
+        public async Task<IActionResult> GetRentalAll()
+        {
+            var list = await _planModuleMapRepository.GetRentalAllAsync();
             return Ok(list);
         }
 
         #endregion
+
 
         #region SUBSCRIBTIONRENEW
 
@@ -237,7 +395,32 @@ namespace XeniaRegistrationBackend.Controllers
             });
         }
 
-        #endregion
+
+        [HttpPost("rental/renew")]
+        public async Task<IActionResult> CreateRentalSubscription([FromBody] CompanyRentalSubscriptionCreateDto dto)
+        {
+            var subId = await _subscribePlanRepository.CreateRentalSubscriptionAsync(dto);
+
+            return Ok(new
+            {
+                status = "success",
+                subscriptionId = subId
+            });
+        }
+        
+
+        [HttpPost("ticket/renew")]
+        public async Task<IActionResult> CreateTicketSubscription([FromBody] CompanyTicketSubscriptionCreateDto dto)
+        {
+            var subId = await _subscribePlanRepository.CreateTicketSubscriptionAsync(dto);
+
+            return Ok(new
+            {
+                status = "success",
+                subscriptionId = subId
+            });
+        }
+
 
         #endregion
 

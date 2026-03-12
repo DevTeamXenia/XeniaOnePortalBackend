@@ -1,8 +1,11 @@
-﻿using System.ComponentModel.DataAnnotations;
+﻿using System;
+using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace XeniaRegistrationBackend.Models
 {
-    public class XRS_CompanySubscription
+    [Table("TK_CompanySubscription", Schema = "dbo")]
+    public class TI_CompanySubscription
     {
         [Key]
         public int SubId { get; set; }
@@ -19,10 +22,13 @@ namespace XeniaRegistrationBackend.Models
 
         public decimal SubscriptionAmount { get; set; }
 
+        public int SubscriptionUserCount { get; set; }
+
         public int SubscriptionDays { get; set; }
 
 
         [MaxLength(50)]
         public string Status { get; set; } = "ACTIVE";
+
     }
 }

@@ -17,14 +17,9 @@ namespace XeniaRegistrationBackend.Models.Temple
         [MaxLength(500)]
         public string? PlanDescription { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal PlanPrice { get; set; }
-
-        public int PlanDurationDays { get; set; }
-
         public int PlanUsers { get; set; }
-        public bool PlanIsAddOn { get; set; }
 
+        public bool PlanIsAddOn { get; set; }
         public int? PlanCreatedBy { get; set; }
 
         public DateTime PlanCreatedOn { get; set; } = DateTime.Now;
@@ -34,5 +29,8 @@ namespace XeniaRegistrationBackend.Models.Temple
         public DateTime? PlanModifiedOn { get; set; }
 
         public bool PlanActive { get; set; } = true;
+
+        public virtual ICollection<TK_SubscribePlanDuration> PlanDurations { get; set; }
+      = new List<TK_SubscribePlanDuration>();
     }
 }

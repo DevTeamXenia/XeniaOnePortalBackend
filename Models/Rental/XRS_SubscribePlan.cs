@@ -1,5 +1,6 @@
 ﻿using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using XeniaRegistrationBackend.Models.Rental;
 
 namespace XeniaRegistrationBackend.Models
 {
@@ -15,13 +16,6 @@ namespace XeniaRegistrationBackend.Models
         [MaxLength(500)]
         public string? PlanDescription { get; set; }
 
-        [Column(TypeName = "decimal(18,2)")]
-        public decimal PlanPrice { get; set; }
-
-        public int PlanDurationDays { get; set; }
-
-        public bool PlanIsAddOn { get; set; } = true;
-
         public int? PlanCreatedBy { get; set; }
 
         public DateTime PlanCreatedOn { get; set; } = DateTime.Now;
@@ -31,5 +25,7 @@ namespace XeniaRegistrationBackend.Models
         public DateTime? PlanModifiedOn { get; set; }
 
         public bool PlanActive { get; set; } = true;
+        public ICollection<XRS_SubscribePlanDuration> PlanDurations { get; set; }
+       = new List<XRS_SubscribePlanDuration>();
     }
 }

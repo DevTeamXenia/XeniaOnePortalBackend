@@ -3,6 +3,7 @@ using XeniaRegistrationBackend.Dtos;
 using XeniaRegistrationBackend.Models;
 using XeniaRegistrationBackend.Models.Rental;
 using XeniaRegistrationBackend.Models.Temple;
+using XeniaRegistrationBackend.Models.Ticket;
 using XeniaRegistrationBackend.Models.Token;
 
 namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
@@ -12,12 +13,14 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
         private readonly TempleDbContext _tecontext;
         private readonly TokenDbContext _tocontext;
         private readonly RentalDbContext _recontext;
+        private readonly TicketDbContext _ticontext;
 
-        public CompanyRegistrationRepository(TempleDbContext tecontext, TokenDbContext tocontext, RentalDbContext recontext)
+        public CompanyRegistrationRepository(TempleDbContext tecontext, TokenDbContext tocontext, RentalDbContext recontext , TicketDbContext ticontext)
         {
             _tecontext = tecontext;
             _tocontext = tocontext;
             _recontext = recontext;
+            _ticontext = ticontext;
         }
 
         public async Task<int> RegisterTempleCompanyAsync( CompanyTempleRegistrationRequestDto request)
@@ -102,13 +105,15 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
         public async Task<List<CompanyTempleListDto>> GetAllTempleCompaniesAsync()
         {
+            DateTime currentDate = DateTime.Now;
+
             var companies = await _tecontext.Company.ToListAsync();
             var result = new List<CompanyTempleListDto>();
 
             foreach (var c in companies)
             {
                 var latestSub = await _tecontext.CompanySubscriptions
-                    .Where(s => s.CompanyId == c.CompanyId)
+                    .Where(s => s.CompanyId == c.CompanyId && s.Status != "PENDING")
                     .OrderByDescending(s => s.SubscriptionEndDate)
                     .FirstOrDefaultAsync();
 
@@ -116,19 +121,26 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
                 if (latestSub != null)
                 {
+                    string realStatus = latestSub.Status.Trim().ToUpper();
+
+                    if (realStatus == "ACTIVE" && latestSub.SubscriptionEndDate < currentDate)
+                        realStatus = "EXPIRED";
+                    else if (realStatus == "TRIAL" && latestSub.SubscriptionEndDate < currentDate)
+                        realStatus = "TRIAL_EXPIRED";
+
 
                     var mainPlanName = await _tecontext.SubscribePlan
                         .Where(p => p.PlanId == latestSub.PlanId)
                         .Select(p => p.PlanName)
                         .FirstOrDefaultAsync();
 
-
                     var addons = await (
                         from a in _tecontext.CompanySubscriptionAddon
                         join p in _tecontext.SubscribePlan
                             on a.PlanId equals p.PlanId
                         where a.CompanyId == c.CompanyId
-                              && a.MainPlanId == latestSub.SubId
+                              && a.MainPlanId == latestSub.PlanId
+                              && a.Status == "ACTIVE"
                         select new SubscriptionTempleAddonDto
                         {
                             SubAddonId = a.SubAddonId,
@@ -141,11 +153,12 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     subDto = new SubscriptionTempleSummaryDto
                     {
                         SubId = latestSub.SubId,
-                        Status = latestSub.Status,
+                        Status = realStatus,
                         StartDate = latestSub.SubscriptionStartDate,
                         EndDate = latestSub.SubscriptionEndDate,
                         Amount = latestSub.SubscriptionAmount,
                         UserCount = latestSub.subscriptionUserCount,
+
                         PlanName = mainPlanName ?? string.Empty,
                         Addons = addons.Any() ? addons : null
                     };
@@ -167,11 +180,16 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
         public async Task<CompanyTempleDetailDto?> GetTempleCompanyByIdAsync(int companyId)
         {
-            var company = await _tecontext.Company.FirstOrDefaultAsync(c => c.CompanyId == companyId);
-            if (company == null) return null;
+            DateTime currentDate = DateTime.Now;
+
+            var company = await _tecontext.Company
+                .FirstOrDefaultAsync(c => c.CompanyId == companyId);
+
+            if (company == null)
+                return null;
 
             var subscription = await _tecontext.CompanySubscriptions
-                .Where(s => s.CompanyId == companyId)
+                .Where(s => s.CompanyId == companyId && s.Status != "PENDING")
                 .OrderByDescending(s => s.SubscriptionEndDate)
                 .FirstOrDefaultAsync();
 
@@ -179,23 +197,36 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
             if (subscription != null)
             {
+                string realStatus = subscription.Status.Trim().ToUpper();
+
+                if (realStatus == "ACTIVE" && subscription.SubscriptionEndDate < currentDate)
+                    realStatus = "EXPIRED";
+                else if (realStatus == "TRIAL" && subscription.SubscriptionEndDate < currentDate)
+                    realStatus = "TRIAL_EXPIRED";
+
+        
                 var addons = await _tecontext.CompanySubscriptionAddon
-                    .Where(a => a.CompanyId == companyId && a.MainPlanId == subscription.PlanId)
+                    .Where(a =>
+                        a.CompanyId == companyId &&
+                        a.MainPlanId == subscription.PlanId &&
+                        a.Status == "ACTIVE")
                     .Select(a => new SubscriptionTempleAddonDto
                     {
                         SubAddonId = a.SubAddonId,
                         Amount = a.Amount,
                         UserCount = a.UserCount
-                    }).ToListAsync();
+                    })
+                    .ToListAsync();
 
                 subDto = new SubscriptionTempleSummaryDto
                 {
                     SubId = subscription.SubId,
-                    Status = subscription.Status,
+                    Status = realStatus,
                     StartDate = subscription.SubscriptionStartDate,
                     EndDate = subscription.SubscriptionEndDate,
                     Amount = subscription.SubscriptionAmount,
                     UserCount = subscription.subscriptionUserCount,
+
                     Addons = addons.Any() ? addons : null
                 };
             }
@@ -211,13 +242,15 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     Address = company.CompanyAddress,
                     Subscription = subDto
                 },
+
                 Settings = await _tecontext.CompanySetting
                     .Where(s => s.CompanyId == companyId)
                     .Select(s => new CompanySettingDto
                     {
                         KeyCode = s.KeyCode,
                         Value = s.Value
-                    }).ToListAsync(),
+                    })
+                    .ToListAsync(),
 
                 Labels = await _tecontext.CompanyLabel
                     .Where(l => l.CompanyId == companyId)
@@ -227,7 +260,8 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                         DisplayName = l.DisplayName,
                         DisplayNameTa = l.DisplayNameTa,
                         DisplayNameMa = l.DisplayNameMa
-                    }).ToListAsync()
+                    })
+                    .ToListAsync()
             };
         }
 
@@ -347,11 +381,15 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
                 if (latestSub != null)
                 {
-
-                    var mainPlanName = await _tecontext.SubscribePlan
-                        .Where(p => p.PlanId == latestSub.PlanId)
-                        .Select(p => p.PlanName)
-                        .FirstOrDefaultAsync();
+         
+                    var plan = await (
+                        from p in _tecontext.SubscribePlan
+                        where p.PlanId == latestSub.PlanId
+                        select new
+                        {
+                            PlanName = p.PlanName                      
+                        }
+                    ).FirstOrDefaultAsync();
 
 
                     var addons = await (
@@ -377,7 +415,8 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                         EndDate = latestSub.SubscriptionEndDate,
                         Amount = latestSub.SubscriptionAmount,
                         DepCount = latestSub.SubscriptionDepCount,
-                        PlanName = mainPlanName ?? string.Empty,
+                        PlanName = plan?.PlanName ?? string.Empty,
+                        PlanDuration = latestSub?.SubscriptionDays, 
                         Addons = addons.Any() ? addons : null
                     };
                 }
@@ -405,8 +444,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
             if (company == null)
                 return null;
 
-   
-            var subscription = await _tecontext.CompanySubscriptions
+            var subscription = await _tocontext.CompanySubscriptions
                 .Where(s => s.CompanyId == companyId && s.Status != "PENDING")
                 .OrderByDescending(s => s.SubscriptionEndDate)
                 .FirstOrDefaultAsync();
@@ -415,6 +453,16 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
             if (subscription != null)
             {
+
+                var plan = await (
+                    from p in _tecontext.SubscribePlan
+                    where p.PlanId == subscription.PlanId
+                    select new
+                    {
+                        PlanName = p.PlanName
+                    }
+                ).FirstOrDefaultAsync();
+
                 subDto = new SubscriptionTokenSummaryDto
                 {
                     SubId = subscription.SubId,
@@ -422,11 +470,12 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     StartDate = subscription.SubscriptionStartDate,
                     EndDate = subscription.SubscriptionEndDate,
                     Amount = subscription.SubscriptionAmount,
-                    DepCount = subscription.subscriptionUserCount
+                    DepCount = subscription.SubscriptionDepCount,
+                    PlanName = plan?.PlanName ?? string.Empty,
+                    PlanDuration = subscription.SubscriptionDays 
                 };
             }
 
-      
             var settingEntity = await _tocontext.CompanySettings
                 .FirstOrDefaultAsync(s => s.CompanyId == companyId);
 
@@ -579,95 +628,102 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
         public async Task<List<CompanyRentalListDto>> GetAllRentalCompaniesAsync()
         {
-            var companies = await _recontext.Company.ToListAsync();
-            var result = new List<CompanyRentalListDto>();
-
-            foreach (var c in companies)
-            {
-                var latestSub = await _recontext.CompanySubscription
-                    .Where(s => s.CompanyId == c.companyID)
-                    .OrderByDescending(s => s.SubscriptionEndDate)
-                    .FirstOrDefaultAsync();
-
-                SubscriptionRentalSummaryDto? subDto = null;
-
-                if (latestSub != null)
+            var result = await _recontext.Company
+                .Select(c => new CompanyRentalListDto
                 {
-
-                    var mainPlanName = await _recontext.SubscribePlan
-                        .Where(p => p.PlanId == latestSub.PlanId)
-                        .Select(p => p.PlanName)
-                        .FirstOrDefaultAsync();
-
-
-                    subDto = new SubscriptionRentalSummaryDto
-                    {
-                        SubId = latestSub.SubId,
-                        Status = latestSub.Status,
-                        StartDate = latestSub.SubscriptionStartDate,
-                        EndDate = latestSub.SubscriptionEndDate,
-                        Amount = latestSub.SubscriptionAmount,                    
-                        PlanName = mainPlanName ?? string.Empty,
-                    };
-                }
-
-                result.Add(new CompanyRentalListDto
-                {
+                    CompanyId = c.companyID,
                     CompanyName = c.companyName,
                     Address = c.address,
                     Email = c.email,
                     PhoneNumber = c.phoneNumber,
                     IsActive = c.IsActive,
-                    Subscription = subDto
-                });
-            }
+
+                    Subscription = _recontext.CompanySubscription
+                        .Where(s => s.CompanyId == c.companyID)
+                        .OrderByDescending(s => s.SubscriptionEndDate)
+                        .Select(s => new SubscriptionRentalSummaryDto
+                        {
+                            SubId = s.SubId,
+                            Status = s.Status,
+                            StartDate = s.SubscriptionStartDate,
+                            EndDate = s.SubscriptionEndDate,
+                            Amount = s.SubscriptionAmount,
+
+                            PlanName = _recontext.SubscribePlan
+                                .Where(p => p.PlanId == s.PlanId)
+                                .Select(p => p.PlanName)
+                                .FirstOrDefault() ?? string.Empty,
+
+                            DurationDays = _recontext.SubscribePlanDurations
+                                .Where(d =>
+                                    d.PlanId == s.PlanId &&
+                                    d.Price == s.SubscriptionAmount &&
+                                    d.IsActive)
+                                .OrderBy(d => d.DurationDays)
+                                .Select(d => d.DurationDays)
+                                .FirstOrDefault()
+                        })
+                        .FirstOrDefault()
+                })
+                .ToListAsync();
 
             return result;
         }
 
         public async Task<CompanyRentalDetailDto?> GetRentalCompanyByIdAsync(int companyId)
         {
-            var company = await _recontext.Company.FirstOrDefaultAsync(c => c.companyID == companyId);
-            if (company == null) return null;
+            var company = await _recontext.Company
+                .Where(c => c.companyID == companyId)
+                .Select(c => new CompanyRentalDetailDto
+                {
+                    Company = new CompanyRentalListDto
+                    {
+                        CompanyId = c.companyID,
+                        CompanyName = c.companyName,
+                        IsActive = c.IsActive,
+                        PhoneNumber = c.phoneNumber,
+                        Address = c.address,
 
-            var subscription = await _recontext.CompanySubscription
-                .Where(s => s.CompanyId == companyId)
-                .OrderByDescending(s => s.SubscriptionEndDate)
+                        Subscription = _recontext.CompanySubscription
+                            .Where(s => s.CompanyId == c.companyID)
+                            .OrderByDescending(s => s.SubscriptionEndDate)
+                            .Select(s => new SubscriptionRentalSummaryDto
+                            {
+                                SubId = s.SubId,
+                                Status = s.Status,
+                                StartDate = s.SubscriptionStartDate,
+                                EndDate = s.SubscriptionEndDate,
+                                Amount = s.SubscriptionAmount,
+
+                                PlanName = _recontext.SubscribePlan
+                                    .Where(p => p.PlanId == s.PlanId)
+                                    .Select(p => p.PlanName)
+                                    .FirstOrDefault() ?? string.Empty,
+
+                                DurationDays = _recontext.SubscribePlanDurations
+                                    .Where(d =>
+                                        d.PlanId == s.PlanId &&
+                                        d.Price == s.SubscriptionAmount &&
+                                        d.IsActive)
+                                    .OrderBy(d => d.DurationDays)
+                                    .Select(d => d.DurationDays)
+                                    .FirstOrDefault()
+                            })
+                            .FirstOrDefault()
+                    },
+
+                    Settings = _recontext.CompanySetting
+                        .Where(s => s.CompanyId == c.companyID)
+                        .Select(s => new CompanyRentalSettingsDto
+                        {
+                            KeyCode = s.KeyCode,
+                            Value = s.Value
+                        })
+                        .ToList()
+                })
                 .FirstOrDefaultAsync();
 
-            SubscriptionRentalSummaryDto? subDto = null;
-
-            if (subscription != null)
-            {
-               subDto = new SubscriptionRentalSummaryDto
-               {
-                    SubId = subscription.SubId,
-                    Status = subscription.Status,
-                    StartDate = subscription.SubscriptionStartDate,
-                    EndDate = subscription.SubscriptionEndDate,
-                    Amount = subscription.SubscriptionAmount,
-                };
-            }
-
-            return new CompanyRentalDetailDto
-            {
-                Company = new CompanyRentalListDto
-                {
-                    CompanyId = company.companyID,
-                    CompanyName = company.companyName,
-                    IsActive = company.IsActive,
-                    PhoneNumber = company.phoneNumber,
-                    Address = company.address,
-                    Subscription = subDto
-                },
-                Settings = await _recontext.CompanySetting
-                    .Where(s => s.CompanyId == companyId)
-                    .Select(s => new CompanyRentalSettingsDto
-                    {
-                        KeyCode = s.KeyCode,
-                        Value = s.Value
-                    }).ToListAsync(),
-            };
+            return company;
         }
 
         public async Task UpdateRentalCompanyAsync(UpdateRentalCompanyDto dto)
@@ -694,6 +750,242 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
             await _recontext.SaveChangesAsync();
         }
+
+
+
+
+        public async Task<int> RegisterTicketCompanyAsync(CompanyTicketRegistrationRequestDto request)
+        {
+            using var transaction = await _ticontext.Database.BeginTransactionAsync();
+
+            try
+            {
+                var company = new TI_Company
+                {
+                    CompanyName = request.CompanyName,
+                    CompanyAddress = request.CompanyAddress,
+                    CompanyPhone1 = request.Phone1,
+                    CompanyPhone2 = request.Phone2,
+                    CompanyRegNo = request.RegNo,
+                    CompanyType = request.CompanyType,
+                    DistrictName = request.District,
+                    StateName = request.State,
+                    IFSCCode = request.IFSCCode,
+                    CompanyToken = Guid.NewGuid().ToString(),
+                    CompanyCreatedBy = 0
+                };
+
+                _ticontext.Company.Add(company);
+                await _ticontext.SaveChangesAsync();
+
+
+                var startDate = DateTime.Today;
+                var endDate = startDate.AddDays(14);
+
+                var trialSubscription = new TI_CompanySubscription
+                {
+                    CompanyId = company.CompanyId,
+                    PlanId = 0,
+                    SubscriptionDate = DateTime.Now,
+                    SubscriptionStartDate = startDate,
+                    SubscriptionEndDate = endDate,
+                    SubscriptionDays = 14,
+                    SubscriptionAmount = 0,
+                    SubscriptionUserCount = 2,
+                    Status = "TRIAL"
+                };
+
+                _ticontext.CompanySubscription.Add(trialSubscription);
+
+
+                foreach (var label in request.Labels)
+                {
+                    _ticontext.CompanyLabel.Add(new TI_CompanyLabel
+                    {
+                        CompanyId = company.CompanyId,
+                        SettingKey = label.SettingKey,
+                        DisplayName = label.DisplayName,
+                        DisplayNameTa = label.DisplayNameTa,
+                        DisplayNameMa = label.DisplayNameMa,
+                        CreatedBy = 0
+                    });
+                }
+
+
+                foreach (var setting in request.Settings)
+                {
+                    _ticontext.CompanySettings.Add(new TI_CompanySettings
+                    {
+                        CompanyId = company.CompanyId,
+                        KeyCode = setting.KeyCode,
+                        Value = setting.Value
+                    });
+                }
+
+                await _ticontext.SaveChangesAsync();
+                await transaction.CommitAsync();
+
+                return company.CompanyId;
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
+
+        public async Task<List<CompanyTicketListDto>> GetAllTicketCompaniesAsync()
+        {
+            var companies = await _ticontext.Company.ToListAsync();
+            var result = new List<CompanyTicketListDto>();
+
+            foreach (var c in companies)
+            {
+                var latestSub = await _ticontext.CompanySubscription
+                    .Where(s => s.CompanyId == c.CompanyId)
+                    .OrderByDescending(s => s.SubscriptionEndDate)
+                    .FirstOrDefaultAsync();
+
+                SubscriptionTicketSummaryDto? subDto = null;
+
+                if (latestSub != null)
+                {
+                    var planName = await _ticontext.SubscribePlan
+                        .Where(p => p.PlanId == latestSub.PlanId)
+                        .Select(p => p.PlanName)
+                        .FirstOrDefaultAsync();
+
+                    subDto = new SubscriptionTicketSummaryDto
+                    {
+                        SubId = latestSub.SubId,
+                        Status = latestSub.Status,
+                        StartDate = latestSub.SubscriptionStartDate,
+                        EndDate = latestSub.SubscriptionEndDate,
+                        Amount = latestSub.SubscriptionAmount,
+                        UserCount = latestSub.SubscriptionUserCount,
+                        PlanName = planName ?? string.Empty,
+                        PlanDuration = latestSub.SubscriptionDays 
+                    };
+                }
+
+                result.Add(new CompanyTicketListDto
+                {
+                    CompanyId = c.CompanyId,
+                    CompanyName = c.CompanyName,
+                    CompanyType = c.CompanyType,
+                    PhoneNumber = c.CompanyPhone1,
+                    Address = c.CompanyAddress,
+                    Subscription = subDto
+                });
+            }
+
+            return result;
+        }
+
+        public async Task<CompanyTicketDetailDto?> GetTicketCompanyByIdAsync(int companyId)
+        {
+            var company = await _ticontext.Company
+                .FirstOrDefaultAsync(c => c.CompanyId == companyId);
+
+            if (company == null)
+                return null;
+
+            var subscription = await _ticontext.CompanySubscription
+                .Where(s => s.CompanyId == companyId)
+                .OrderByDescending(s => s.SubscriptionEndDate)
+                .FirstOrDefaultAsync();
+
+            SubscriptionTicketSummaryDto? subDto = null;
+
+            if (subscription != null)
+            {
+                var planName = await _ticontext.SubscribePlan
+                    .Where(p => p.PlanId == subscription.PlanId)
+                    .Select(p => p.PlanName)
+                    .FirstOrDefaultAsync();
+
+                subDto = new SubscriptionTicketSummaryDto
+                {
+                    SubId = subscription.SubId,
+                    Status = subscription.Status,
+                    StartDate = subscription.SubscriptionStartDate,
+                    EndDate = subscription.SubscriptionEndDate,
+                    Amount = subscription.SubscriptionAmount,
+                    UserCount = subscription.SubscriptionUserCount,
+                    PlanName = planName ?? string.Empty,
+                    PlanDuration = subscription.SubscriptionDays
+                };
+            }
+
+            return new CompanyTicketDetailDto
+            {
+                Company = new CompanyTicketListDto
+                {
+                    CompanyId = company.CompanyId,
+                    CompanyName = company.CompanyName,
+                    CompanyType = company.CompanyType,
+                    PhoneNumber = company.CompanyPhone1,
+                    Address = company.CompanyAddress,
+                    Subscription = subDto
+                },
+
+                Settings = await _ticontext.CompanySettings
+                    .Where(s => s.CompanyId == companyId)
+                    .Select(s => new CompanyTicketSettingDto
+                    {
+                        KeyCode = s.KeyCode,
+                        Value = s.Value
+                    })
+                    .ToListAsync(),
+
+                Labels = await _ticontext.CompanyLabel
+                    .Where(l => l.CompanyId == companyId)
+                    .Select(l => new CompanyTicketLabelDto
+                    {
+                        SettingKey = l.SettingKey,
+                        DisplayName = l.DisplayName,
+                        DisplayNameTa = l.DisplayNameTa,
+                        DisplayNameMa = l.DisplayNameMa
+                    })
+                    .ToListAsync()
+            };
+        }
+
+        public async Task UpdateTicketCompanyAsync(UpdateTicketCompanyDto dto)
+        {
+            var company = await _ticontext.Company.FirstOrDefaultAsync(c => c.CompanyId == dto.CompanyId);
+            if (company == null) throw new Exception("Company not found");
+
+            company.CompanyName = dto.CompanyName;
+            company.CompanyAddress = dto.Address;
+
+            _ticontext.CompanySettings.RemoveRange(
+                _ticontext.CompanySettings.Where(s => s.CompanyId == dto.CompanyId));
+
+            _ticontext.CompanyLabel.RemoveRange(
+                _ticontext.CompanyLabel.Where(l => l.CompanyId == dto.CompanyId));
+
+            await _ticontext.SaveChangesAsync();
+
+            _ticontext.CompanySettings.AddRange(dto.Settings.Select(s => new TI_CompanySettings
+            {
+                CompanyId = dto.CompanyId,
+                KeyCode = s.KeyCode,
+                Value = s.Value
+            }));
+
+            _ticontext.CompanyLabel.AddRange(dto.Labels.Select(l => new TI_CompanyLabel
+            {
+                CompanyId = dto.CompanyId,
+                SettingKey = l.SettingKey,
+                DisplayName = l.DisplayName,
+                DisplayNameTa = l.DisplayNameTa,
+                DisplayNameMa = l.DisplayNameMa
+            }));
+
+            await _tecontext.SaveChangesAsync();
+        }
+
 
     }
 

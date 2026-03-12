@@ -147,6 +147,46 @@ namespace XeniaRegistrationBackend.Controllers
         }
 
         #endregion
+
+
+        #region TICKET
+
+
+        [HttpGet("ticket")]
+        public async Task<IActionResult> GetAllTicketCompany()
+        => Ok(await _repositoryCompanyRegistration.GetAllTicketCompaniesAsync());
+
+
+        [HttpGet("ticket/{id}")]
+        public async Task<IActionResult> GetTicketCompanyByIdAsync(int id)
+        {
+            var result = await _repositoryCompanyRegistration.GetTicketCompanyByIdAsync(id);
+            return result == null ? NotFound() : Ok(result);
+        }
+
+
+        [HttpPut("ticket/update")]
+        public async Task<IActionResult> UpdateTicket(UpdateTicketCompanyDto dto)
+        {
+            await _repositoryCompanyRegistration.UpdateTicketCompanyAsync(dto);
+            return Ok(new { status = "updated" });
+        }
+
+
+        [HttpPost("ticket/register")]
+        public async Task<IActionResult> RegisterTicketCompanyAsync([FromBody] CompanyTicketRegistrationRequestDto request)
+        {
+            var companyId = await _repositoryCompanyRegistration.RegisterTicketCompanyAsync(request);
+
+            return Ok(new
+            {
+                Status = "Success",
+                CompanyId = companyId,
+                Message = "Company registered successfully"
+            });
+        }
+
+        #endregion
     }
 
 }

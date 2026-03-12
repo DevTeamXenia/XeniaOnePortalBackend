@@ -13,5 +13,6 @@ namespace XeniaRegistrationBackend.Models.Temple
         public DbSet<TK_Module> Modules { get; set; }
         public DbSet<TK_SubscribePlan> SubscribePlan { get; set; }
         public DbSet<TK_PlanModuleMap> PlanModuleMap { get; set; }
+        public DbSet<TK_SubscribePlanDuration> SubscribePlanDuration { get; set; }
     }
 }

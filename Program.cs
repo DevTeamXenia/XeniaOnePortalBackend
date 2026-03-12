@@ -9,6 +9,7 @@ using System.Text;
 using XeniaRegistrationBackend.Models;
 using XeniaRegistrationBackend.Models.Rental;
 using XeniaRegistrationBackend.Models.Temple;
+using XeniaRegistrationBackend.Models.Ticket;
 using XeniaRegistrationBackend.Repositories.Auth;
 using XeniaRegistrationBackend.Repositories.CompanyRegistration;
 using XeniaRegistrationBackend.Repositories.Module;
@@ -89,6 +90,9 @@ builder.Services.AddDbContext<TokenDbContext>(options =>
 
 builder.Services.AddDbContext<RentalDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultRentalConnection")));
+
+builder.Services.AddDbContext<TicketDbContext>(options =>
+    options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultTicketConnection")));
 
 
 builder.Services.AddScoped<IAuthRepository, AuthRepository>();
