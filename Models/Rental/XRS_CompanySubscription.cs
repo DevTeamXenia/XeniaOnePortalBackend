@@ -1,7 +1,9 @@
 ﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace XeniaRegistrationBackend.Models
 {
+    [Table("XRS_CompanySubscription")]
     public class XRS_CompanySubscription
     {
         [Key]

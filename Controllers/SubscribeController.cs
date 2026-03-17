@@ -261,21 +261,22 @@ namespace XeniaRegistrationBackend.Controllers
         #region SUBSCRIBTIONPLANMODULE
 
         [HttpPost("temple/planModuleMap")]
-        public async Task<IActionResult> CreateTemplePlanModule([FromBody] TK_PlanModuleMap request)
+        public async Task<IActionResult> CreateTemplePlanModule([FromBody] List<TK_PlanModuleMap> request)
         {
-            var id = await _planModuleMapRepository.CreateTemplePlanModuleAsync(request);
+            var ids = await _planModuleMapRepository.CreateTemplePlanModuleAsync(request);
+
             return Ok(new
             {
-                Message = "Module mapped to plan successfully",
-                SubPlanId = id
+                Message = "Modules mapped to plan successfully",
+                SubPlanIds = ids
             });
         }
 
-      
+
         [HttpPut("temple/planModuleMap/{id}")]
-        public async Task<IActionResult> UpdateTemplePlanModule(int id, [FromBody] TK_PlanModuleMap request)
+        public async Task<IActionResult> UpdateTemplePlanModule(int id, [FromBody] List<TK_PlanModuleMap> request)
         {
-            var updated = await _planModuleMapRepository.UpdateTemplePlanModuleAsync(id, request);
+            var updated = await _planModuleMapRepository.UpdateTemplePlanModuleAsync(request);
             if (!updated) return NotFound("Mapping not found");
 
             return Ok(new { Message = "Mapping updated successfully" });

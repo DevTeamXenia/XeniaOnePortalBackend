@@ -17,29 +17,40 @@
             _recontext = recontext; 
         }
 
-        public async Task<int> CreateTemplePlanModuleAsync(TK_PlanModuleMap request)
+        public async Task<List<int>> CreateTemplePlanModuleAsync(List<TK_PlanModuleMap> request)
         {
-            var map = new TK_PlanModuleMap
+            var maps = request.Select(x => new TK_PlanModuleMap
             {
-                PlanId = request.PlanId,
-                ModuleId = request.ModuleId,
-                Active = request.Active
-            };
+                PlanId = x.PlanId,
+                ModuleId = x.ModuleId,
+                Active = x.Active
+            }).ToList();
 
-            _tecontext.PlanModuleMap.Add(map);
+            await _tecontext.PlanModuleMap.AddRangeAsync(maps);
             await _tecontext.SaveChangesAsync();
 
-            return map.SubPlanId;
+            return maps.Select(x => x.SubPlanId).ToList();
         }
 
-        public async Task<bool> UpdateTemplePlanModuleAsync(int subPlanId, TK_PlanModuleMap request)
+        public async Task<bool> UpdateTemplePlanModuleAsync(List<TK_PlanModuleMap> request)
         {
-            var map = await _tecontext.PlanModuleMap.FindAsync(subPlanId);
-            if (map == null) return false;
+            if (request == null || !request.Any())
+                return false;
 
-            map.PlanId = request.PlanId;
-            map.ModuleId = request.ModuleId;
-            map.Active = request.Active;
+            var ids = request.Select(x => x.SubPlanId).ToList();
+
+            var existingMaps = await _tecontext.PlanModuleMap
+                .Where(x => ids.Contains(x.SubPlanId))
+                .ToListAsync();
+
+            foreach (var map in existingMaps)
+            {
+                var updated = request.First(x => x.SubPlanId == map.SubPlanId);
+
+                map.PlanId = updated.PlanId;
+                map.ModuleId = updated.ModuleId;
+                map.Active = updated.Active;
+            }
 
             await _tecontext.SaveChangesAsync();
             return true;

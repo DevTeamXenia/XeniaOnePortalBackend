@@ -6,8 +6,8 @@ namespace XeniaRegistrationBackend.Repositories.PlanModule
 {
     public interface IPlanModuleMapRepository
     {
-        Task<int> CreateTemplePlanModuleAsync(TK_PlanModuleMap request);
-        Task<bool> UpdateTemplePlanModuleAsync(int subPlanId, TK_PlanModuleMap request);
+        Task<List<int>> CreateTemplePlanModuleAsync(List<TK_PlanModuleMap> request);
+        Task<bool> UpdateTemplePlanModuleAsync(List<TK_PlanModuleMap> request);
         Task<PlanModuleMapResponseDto?> GetTemplePlanModuleByIdAsync(int subPlanId);
         Task<List<PlanModuleMapResponseDto>> GetTempleAllAsync();
 
