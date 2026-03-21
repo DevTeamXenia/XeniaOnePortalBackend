@@ -507,7 +507,8 @@
             {
                 DurationDays = request.PlanDurationDays,
                 Price = request.PlanPrice,
-                IsActive = true
+                IsActive = true,
+                CreatedOn = DateTime.UtcNow
             });
 
             await _recontext.SaveChangesAsync();
@@ -531,7 +532,10 @@
                 PlanId = plan.PlanId,
                 DurationDays = request.PlanDurationDays,
                 Price = request.PlanPrice,
-                IsActive = true
+                IsActive = true,
+                CreatedOn = DateTime.UtcNow,   // ← this was missing, causing the crash
+               
+
             };
 
             _recontext.SubscribePlanDurations.Add(duration);
@@ -678,7 +682,8 @@
                 PlanId = plan.PlanId,
                 DurationDays = request.PlanDurationDays,
                 Price = request.PlanPrice,
-                IsActive = true
+                IsActive = true,
+                CreatedOn = DateTime.UtcNow  // ← add this
             };
 
             _ticontext.SubscribePlanDuration.Add(duration);

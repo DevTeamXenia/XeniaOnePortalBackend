@@ -18,12 +18,11 @@ namespace XeniaRegistrationBackend.Models
         public string phoneNumber { get; set; }
 
         public  string pin { get; set; }
+  
 
         public string? logo { get; set; }
-
+        public string? Country { get; set; }
         public bool IsActive { get; set; }
-
-
 
     }
 }

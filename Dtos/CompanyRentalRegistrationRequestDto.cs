@@ -15,7 +15,9 @@
         public string? logo { get; set; }
 
         public bool IsActive { get; set; }
+        public string? Country { get; set; }
         public List<CompanyRentalSettingsDto> Settings { get; set; } = new();
+    
     }
 
     public class CompanyRentalSettingsDto

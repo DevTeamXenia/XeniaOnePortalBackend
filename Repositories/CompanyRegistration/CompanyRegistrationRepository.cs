@@ -559,7 +559,9 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                 }
             }
 
-            await _tecontext.SaveChangesAsync();
+            //await _tecontext.SaveChangesAsync();
+            // ✅ FIX:
+            await _tocontext.SaveChangesAsync();
         }
 
 
@@ -568,8 +570,8 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
         public async Task<int> RegisterRentalCompanyAsync(CompanyRentalRegistrationRequestDto request)
         {
-            using var tx = await _tocontext.Database.BeginTransactionAsync();
-
+            //using var tx = await _tocontext.Database.BeginTransactionAsync();
+            using var tx = await _recontext.Database.BeginTransactionAsync();  // ✅ FIX
             try
             {
                 var company = new XRS_Company
@@ -580,11 +582,16 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     phoneNumber = request.phoneNumber,
                     pin = request.pin,
                     logo = request.logo,
+                   
                     IsActive = request.IsActive,
+                    Country = request.Country   // ✅ ADD THIS
+
+
                 };
 
                 _recontext.Company.Add(company);
-                await _tocontext.SaveChangesAsync();
+                //await _tocontext.SaveChangesAsync();
+                await _recontext.SaveChangesAsync();  // ✅ FIX
 
                 var startDate = DateTime.Today;
                 var endDate = startDate.AddDays(14);
@@ -624,6 +631,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                 await tx.RollbackAsync();
                 throw;
             }
+            
         }
 
         public async Task<List<CompanyRentalListDto>> GetAllRentalCompaniesAsync()
@@ -636,6 +644,11 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     Address = c.address,
                     Email = c.email,
                     PhoneNumber = c.phoneNumber,
+                    Pin = c.pin,
+                    Country = c.Country,// ✅ ADD THIS
+
+
+
                     IsActive = c.IsActive,
 
                     Subscription = _recontext.CompanySubscription
@@ -671,6 +684,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
         }
 
         public async Task<CompanyRentalDetailDto?> GetRentalCompanyByIdAsync(int companyId)
+                     
         {
             var company = await _recontext.Company
                 .Where(c => c.companyID == companyId)
@@ -683,6 +697,11 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                         IsActive = c.IsActive,
                         PhoneNumber = c.phoneNumber,
                         Address = c.address,
+                        Email = c.email,   // ✅ ADD THIS
+                        Pin = c.pin,
+                        Country = c.Country,
+
+
 
                         Subscription = _recontext.CompanySubscription
                             .Where(s => s.CompanyId == c.companyID)
@@ -733,6 +752,8 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
             company.companyName = dto.CompanyName;
             company.address = dto.Address;
+            company.Country = dto.Country;   // ✅ ADD THIS
+
 
             _recontext.CompanySetting.RemoveRange(
                 _recontext.CompanySetting.Where(s => s.CompanyId == dto.CompanyId));

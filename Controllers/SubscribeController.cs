@@ -199,7 +199,7 @@ namespace XeniaRegistrationBackend.Controllers
 
             return Ok(new { Message = "Plan updated successfully" });
         }
-
+         
 
         [HttpGet("rental/plan")]
         public async Task<IActionResult> GetAllRentalSubscriptionPlan()
