@@ -16,6 +16,7 @@ namespace XeniaRegistrationBackend.Models.Token
         public string? PlanDescription { get; set; }
 
         public int PlanDep { get; set; }
+        public int? PlanUsers { get; set; }        // ADD THIS
 
         public bool PlanIsAddOn { get; set; }
 

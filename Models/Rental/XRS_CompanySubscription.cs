@@ -22,6 +22,7 @@ namespace XeniaRegistrationBackend.Models
         public decimal SubscriptionAmount { get; set; }
 
         public int SubscriptionDays { get; set; }
+        public int SubscriptionUserCount { get; set; }  // ✅ already in DB
 
 
         [MaxLength(50)]

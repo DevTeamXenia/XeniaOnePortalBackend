@@ -604,7 +604,9 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     SubscriptionStartDate = startDate,
                     SubscriptionEndDate = endDate,
                     SubscriptionDays = 14,
-                    SubscriptionAmount = 0,    
+                    SubscriptionAmount = 0,
+                    SubscriptionUserCount = 2,  // ✅ ADD THIS ONLY
+
                     Status = "TRIAL",
                 };
 
@@ -634,10 +636,96 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
             
         }
 
+        //public async Task<List<CompanyRentalListDto>> GetAllRentalCompaniesAsync()
+        //{
+        //    var result = await _recontext.Company
+        //        .Select(c => new CompanyRentalListDto
+        //        {
+        //            CompanyId = c.companyID,
+        //            CompanyName = c.companyName,
+        //            Address = c.address,
+        //            Email = c.email,
+        //            PhoneNumber = c.phoneNumber,
+        //            Pin = c.pin,
+        //            Country = c.Country,// ✅ ADD THIS
+        //            IsActive = c.IsActive,
+
+        //            Subscription = _recontext.CompanySubscription
+        //                .Where(s => s.CompanyId == c.companyID)
+        //                .OrderByDescending(s => s.SubscriptionEndDate)
+        //                .Select(s => new SubscriptionRentalSummaryDto
+        //                {
+        //                    SubId = s.SubId,
+        //                    Status = s.Status,
+        //                    StartDate = s.SubscriptionStartDate,
+        //                    EndDate = s.SubscriptionEndDate,
+        //                    Amount = s.SubscriptionAmount,
+
+        //                    PlanName = _recontext.SubscribePlan
+        //                        .Where(p => p.PlanId == s.PlanId)
+        //                        .Select(p => p.PlanName)
+        //                        .FirstOrDefault() ?? string.Empty,
+
+        //                    DurationDays = _recontext.SubscribePlanDurations
+        //                        .Where(d =>
+        //                            d.PlanId == s.PlanId &&
+        //                            d.Price == s.SubscriptionAmount &&
+        //                            d.IsActive)
+        //                        .OrderBy(d => d.DurationDays)
+        //                        .Select(d => d.DurationDays)
+        //                        .FirstOrDefault()
+        //                })
+        //                .FirstOrDefault()
+        //        })
+        //        .ToListAsync();
+
+        //    return result;
+        //}
+
         public async Task<List<CompanyRentalListDto>> GetAllRentalCompaniesAsync()
         {
-            var result = await _recontext.Company
-                .Select(c => new CompanyRentalListDto
+            var companies = await _recontext.Company.ToListAsync();
+            var result = new List<CompanyRentalListDto>();
+
+            foreach (var c in companies)
+            {
+                var latestSub = await _recontext.CompanySubscription
+                    .Where(s => s.CompanyId == c.companyID)
+                    .OrderByDescending(s => s.SubscriptionEndDate)
+                    .FirstOrDefaultAsync();
+
+                SubscriptionRentalSummaryDto? subDto = null;
+
+                if (latestSub != null)
+                {
+                    var planName = await _recontext.SubscribePlan
+                        .Where(p => p.PlanId == latestSub.PlanId)
+                        .Select(p => p.PlanName)
+                        .FirstOrDefaultAsync();
+
+                    var durationDays = await _recontext.SubscribePlanDurations
+                        .Where(d =>
+                            d.PlanId == latestSub.PlanId &&
+                            d.Price == latestSub.SubscriptionAmount &&
+                            d.IsActive)
+                        .OrderBy(d => d.DurationDays)
+                        .Select(d => d.DurationDays)
+                        .FirstOrDefaultAsync();
+
+                    subDto = new SubscriptionRentalSummaryDto
+                    {
+                        SubId = latestSub.SubId,
+                        Status = latestSub.Status,
+                        StartDate = latestSub.SubscriptionStartDate,
+                        EndDate = latestSub.SubscriptionEndDate,
+                        Amount = latestSub.SubscriptionAmount,
+                        UserCount = latestSub.SubscriptionUserCount,  // ✅ THIS IS YOUR TASK
+                        PlanName = planName ?? string.Empty,
+                        DurationDays = durationDays
+                    };
+                }
+
+                result.Add(new CompanyRentalListDto
                 {
                     CompanyId = c.companyID,
                     CompanyName = c.companyName,
@@ -645,43 +733,16 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     Email = c.email,
                     PhoneNumber = c.phoneNumber,
                     Pin = c.pin,
-                    Country = c.Country,// ✅ ADD THIS
-
-
-
+                    Country = c.Country,
                     IsActive = c.IsActive,
-
-                    Subscription = _recontext.CompanySubscription
-                        .Where(s => s.CompanyId == c.companyID)
-                        .OrderByDescending(s => s.SubscriptionEndDate)
-                        .Select(s => new SubscriptionRentalSummaryDto
-                        {
-                            SubId = s.SubId,
-                            Status = s.Status,
-                            StartDate = s.SubscriptionStartDate,
-                            EndDate = s.SubscriptionEndDate,
-                            Amount = s.SubscriptionAmount,
-
-                            PlanName = _recontext.SubscribePlan
-                                .Where(p => p.PlanId == s.PlanId)
-                                .Select(p => p.PlanName)
-                                .FirstOrDefault() ?? string.Empty,
-
-                            DurationDays = _recontext.SubscribePlanDurations
-                                .Where(d =>
-                                    d.PlanId == s.PlanId &&
-                                    d.Price == s.SubscriptionAmount &&
-                                    d.IsActive)
-                                .OrderBy(d => d.DurationDays)
-                                .Select(d => d.DurationDays)
-                                .FirstOrDefault()
-                        })
-                        .FirstOrDefault()
-                })
-                .ToListAsync();
+                    Subscription = subDto
+                });
+            }
 
             return result;
         }
+
+
 
         public async Task<CompanyRentalDetailDto?> GetRentalCompanyByIdAsync(int companyId)
                      

@@ -278,6 +278,7 @@
                 PlanName = request.PlanName,
                 PlanDescription = request.PlanDescription,
                 PlanDep = request.PlanDeps,
+                PlanUsers = request.PlanUsers,
                 PlanIsAddOn = request.planIsAddOn,
                 PlanActive = request.PlanActive,
                 PlanCreatedOn = DateTime.UtcNow,
@@ -307,6 +308,7 @@
             plan.PlanName = request.PlanName;
             plan.PlanDescription = request.PlanDescription;
             plan.PlanDep = request.PlanDeps;
+            plan.PlanUsers = request.PlanUsers;
             plan.PlanIsAddOn = request.planIsAddOn;
             plan.PlanActive = request.PlanActive;
             plan.PlanModifiedOn = DateTime.UtcNow;
@@ -334,6 +336,7 @@
                     PlanName = p.PlanName,
                     PlanDescription = p.PlanDescription,
                     PlanDeps = p.PlanDep,
+                    PlanUsers = p.PlanUsers,
                     PlanIsAddOn = p.PlanIsAddOn,
                     PlanActive = p.PlanActive,
 
@@ -359,7 +362,8 @@
                     PlanId = p.PlanId,
                     PlanName = p.PlanName,
                     PlanDescription = p.PlanDescription,
-                    PlanDeps = p.PlanDep, 
+                    PlanDeps = p.PlanDep,
+                    PlanUsers = p.PlanUsers,
                     PlanIsAddOn = p.PlanIsAddOn,
                     PlanActive = p.PlanActive,
 
@@ -500,6 +504,8 @@
             plan.PlanName = request.PlanName;
             plan.PlanDescription = request.PlanDescription;
             plan.PlanActive = request.PlanActive;
+            plan.PlanUsers = request.PlanUsers;  // ADD THIS
+            plan.PlanIsAddOn = request.PlanIsAddOn;
 
             _recontext.SubscribePlanDurations.RemoveRange(plan.PlanDurations);
      
@@ -521,7 +527,9 @@
             {
                 PlanName = request.PlanName,
                 PlanDescription = request.PlanDescription,
-                PlanActive = request.PlanActive
+                PlanActive = request.PlanActive,
+                 PlanUsers = request.PlanUsers  ,
+                PlanIsAddOn = request.PlanIsAddOn   // ADD THIS// ADD THIS
             };
 
             _recontext.SubscribePlan.Add(plan);
@@ -554,6 +562,8 @@
                     PlanName = p.PlanName,
                     PlanDescription = p.PlanDescription,
                     PlanActive = p.PlanActive,
+                    PlanUsers = p.PlanUsers,        // ADD THIS
+                    PlanIsAddOn = p.PlanIsAddOn,    // ADD THIS
                     Durations = p.PlanDurations
                         .Where(d => d.IsActive)
                         .Select(d => new SubscribeRentalPlanDurationDto
@@ -578,13 +588,17 @@
                     PlanName = p.PlanName,
                     PlanDescription = p.PlanDescription,
                     PlanActive = p.PlanActive,
+                    PlanUsers = p.PlanUsers,
+                    PlanIsAddOn = p.PlanIsAddOn,
+                    // ADD THIS
                     Durations = p.PlanDurations
                         .Where(d => d.IsActive)
                         .Select(d => new SubscribeRentalPlanDurationDto
                         {
                             PlanDurationId = d.PlanDurationId,
                             DurationDays = d.DurationDays,
-                            Price = d.Price
+                            Price = d.Price,
+                           
                         })
                         .ToList()
                 })
@@ -639,6 +653,8 @@
                     SubscriptionEndDate = endDate,
                     SubscriptionDays = duration.DurationDays,
                     SubscriptionAmount = duration.Price,
+                    //SubscriptionUserCount = plan.PlanUsers,  // ✅ ADD THIS
+                    SubscriptionUserCount = plan.PlanUsers ,  // ✅ fix null
                     Status = "ACTIVE"
                 };
 

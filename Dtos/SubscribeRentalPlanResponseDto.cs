@@ -9,6 +9,8 @@
         public string? PlanDescription { get; set; }
 
         public bool PlanActive { get; set; }
+        public int? PlanUsers { get; set; }
+        public bool PlanIsAddOn { get; set; }// change int to int?
         public List<SubscribeRentalPlanDurationDto> Durations { get; set; }
             = new();
     }

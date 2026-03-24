@@ -7,6 +7,7 @@
         public string PlanName { get; set; } = null!;
         public string? PlanDescription { get; set; }
         public int PlanDeps { get; set; }
+        public int? PlanUsers { get; set; }
         public bool PlanIsAddOn { get; set; }
         public bool PlanActive { get; set; }
         public List<SubscribeTokenPlanDurationResponseDto> Durations { get; set; }

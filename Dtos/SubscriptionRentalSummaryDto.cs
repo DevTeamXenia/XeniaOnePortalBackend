@@ -9,5 +9,6 @@
         public decimal Amount { get; set; }
         public string PlanName { get; set; } = null!;
         public int DurationDays { get; set; }
+        public int UserCount { get; set; }  // ✅ ADD
     }
 }

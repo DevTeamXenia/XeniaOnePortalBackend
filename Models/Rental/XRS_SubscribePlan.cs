@@ -25,6 +25,8 @@ namespace XeniaRegistrationBackend.Models
         public DateTime? PlanModifiedOn { get; set; }
 
         public bool PlanActive { get; set; } = true;
+        public int PlanUsers { get; set; }
+        public bool PlanIsAddOn { get; set; } 
         public ICollection<XRS_SubscribePlanDuration> PlanDurations { get; set; }
        = new List<XRS_SubscribePlanDuration>();
     }
