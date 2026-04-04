@@ -21,13 +21,14 @@ namespace XeniaRegistrationBackend.Models.Token
         [MaxLength(500)]
         public string? Address { get; set; }
 
+
         [MaxLength(150)]
         public string? Email { get; set; }
 
-        [MaxLength(100)]
-        public string? UserName { get; set; }
+        //[MaxLength(100)]
+        //public string? UserName { get; set; }
 
-        [MaxLength(200)]
-        public string? Password { get; set; }
+        //[MaxLength(200)]
+        //public string? Password { get; set; }
     }
 }
