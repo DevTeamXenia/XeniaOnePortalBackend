@@ -7,6 +7,9 @@
         public string? CompanyType { get; set; } = null!;
         public string? PhoneNumber { get; set; } = null!;
         public string? Address { get; set; } = null!;
+        //public string? userName { get; set; }
+        //public string? password { get; set; }
+
 
         public SubscriptionTicketSummaryDto? Subscription { get; set; }
     }

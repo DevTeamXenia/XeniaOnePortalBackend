@@ -12,5 +12,6 @@ namespace XeniaRegistrationBackend.Models.Ticket
         public DbSet<TI_CompanySubscriptionAddon> CompanySubscriptionAddon { get; set; }
         public DbSet<TI_SubscribePlan> SubscribePlan { get; set; }
         public DbSet<TI_SubscribePlanDuration> SubscribePlanDuration { get; set; }
+        public DbSet<TI_Users> TI_Users { get; set; }
     }
 }

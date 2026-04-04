@@ -11,6 +11,8 @@
         public string? District { get; set; }
         public string? State { get; set; }
         public string? IFSCCode { get; set; }
+        public string? UserName { get; set; }
+        public string? Password { get; set; }
 
         public List<CompanyLabelDto> Labels { get; set; } = new();
         public List<CompanySettingDto> Settings { get; set; } = new();

@@ -13,5 +13,6 @@ namespace XeniaRegistrationBackend.Models.Rental
         public DbSet<XRS_SubscribePlanDuration> SubscribePlanDurations { get; set; }
         public DbSet<XRS_Module> Module { get; set; }
         public DbSet<XRS_PlanModuleMap> PlanModuleMap { get; set; }
+        public DbSet<XRS_Users> Users { get; set; }
     }
 }

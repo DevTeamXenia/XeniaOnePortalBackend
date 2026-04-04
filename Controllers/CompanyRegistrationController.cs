@@ -51,6 +51,8 @@ namespace XeniaRegistrationBackend.Controllers
             {
                 Status = "Success",
                 CompanyId = companyId,
+                UserName = request.UserName,
+                Password = request.Password,
                 Message = "Company registered successfully"
             });
         }
@@ -74,7 +76,9 @@ namespace XeniaRegistrationBackend.Controllers
                 return Ok(new
                 {
                     status = "success",
-                    companyId
+                    CompanyId = companyId,
+                    UserName = dto.UserName,
+                    Password = dto.Password,
                 });
             }
             catch (Exception ex)
@@ -142,6 +146,8 @@ namespace XeniaRegistrationBackend.Controllers
             {
                 Status = "Success",
                 CompanyId = companyId,
+                UserName = request.userName,
+                Password = request.password,
                 Message = "Company registered successfully"
             });
         }
@@ -182,6 +188,8 @@ namespace XeniaRegistrationBackend.Controllers
             {
                 Status = "Success",
                 CompanyId = companyId,
+                UserName = request.userName,
+                Password = request.password,
                 Message = "Company registered successfully"
             });
         }

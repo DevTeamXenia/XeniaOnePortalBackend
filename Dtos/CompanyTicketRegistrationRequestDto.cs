@@ -11,6 +11,8 @@
         public string? District { get; set; }
         public string? State { get; set; }
         public string? IFSCCode { get; set; }
+        public string? userName { get; set; }
+        public string? password { get; set; }
         public List<CompanyTicketLabelDto> Labels { get; set; } = new();
         public List<CompanyTicketSettingDto> Settings { get; set; } = new();
     }

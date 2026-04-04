@@ -4,7 +4,7 @@
 
     namespace XeniaRegistrationBackend.Models
     {
-        [Table("TK_CompanyLabel", Schema = "dbo")]
+        [Table("TI_CompanyLabel", Schema = "dbo")]
         public class TI_CompanyLabel
         {
             [Key]

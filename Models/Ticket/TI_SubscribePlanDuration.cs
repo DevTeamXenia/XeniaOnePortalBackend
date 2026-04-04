@@ -1,10 +1,12 @@
-﻿using System.ComponentModel.DataAnnotations.Schema;
+﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations.Schema;
 
 namespace XeniaRegistrationBackend.Models.Ticket
 {
     [Table("TI_SubscribePlanDuration", Schema = "dbo")]
     public class TI_SubscribePlanDuration
     {
+        [Key]
         public int PlanDurationId { get; set; }
         public int PlanId { get; set; }
         public int DurationDays { get; set; }

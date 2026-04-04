@@ -1,6 +1,7 @@
 ﻿using Microsoft.EntityFrameworkCore;
 using XeniaRegistrationBackend.Models.Token;
 using XeniaRegistrationBackend.Models.Token.XeniaTempleBackend.Models;
+using YourProjectNamespace.Models;
 
 namespace XeniaRegistrationBackend.Models.Temple
 {
@@ -14,6 +15,6 @@ namespace XeniaRegistrationBackend.Models.Temple
         public DbSet<xtm_CompanySubscription> CompanySubscriptions { get; set; }
         public DbSet<xtm_CompanySubscriptionAddon> CompanySubscriptionAddon { get; set; }
         public DbSet<xtm_CompanySettings> CompanySettings { get; set; }
-
+        public DbSet<XtmUser> Users { get; set; }
     }
 }

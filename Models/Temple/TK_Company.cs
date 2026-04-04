@@ -45,6 +45,8 @@ namespace XeniaRegistrationBackend.Models.Temple
         public DateTime? CompanyModifiedOn { get; set; }
         public int? CompanyModifiedBy { get; set; }
 
+    
+
         public bool CompanyActive { get; set; } = true;
     }
 }

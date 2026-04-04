@@ -14,6 +14,8 @@
         public string? Email { get; set; }
         public string? Pin { get; set; } // ✅ ADD THIS
         public string? PhoneNumber { get; set; }
+        //public string? UserName { get; set; }
+        //public string? Password { get; set; }
 
      
         public SubscriptionRentalSummaryDto? Subscription { get; set; }

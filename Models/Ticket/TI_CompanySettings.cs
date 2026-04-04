@@ -3,7 +3,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace XeniaRegistrationBackend.Models
 {
-    [Table("TK_CompanySettings", Schema = "dbo")]
+    [Table("TI_CompanySettings", Schema = "dbo")]
     public class TI_CompanySettings
     {
         [Key]

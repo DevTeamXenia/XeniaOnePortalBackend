@@ -4,7 +4,7 @@ using System.ComponentModel.DataAnnotations.Schema;
 
 namespace XeniaRegistrationBackend.Models
 {
-    [Table("TK_CompanySubscription", Schema = "dbo")]
+    [Table("TI_CompanySubscription", Schema = "dbo")]
     public class TI_CompanySubscription
     {
         [Key]

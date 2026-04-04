@@ -23,6 +23,6 @@ namespace XeniaRegistrationBackend.Models
         public string? logo { get; set; }
         public string? Country { get; set; }
         public bool IsActive { get; set; }
-
+      
     }
 }
