@@ -41,6 +41,9 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
 
 
         Task<int> CreateRentalSubscriptionAsync(CompanyRentalSubscriptionCreateDto dto);
+        Task<int> CreateRentalAddonAsync(CompanyRentalSubscriptionAddonCreateDto dto);
+        Task<SubscriptionRentalSummaryDto?> GetRentalSubscriptionSummaryAsync(int companyId);
+       
 
         #endregion
 

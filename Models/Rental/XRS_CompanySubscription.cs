@@ -19,11 +19,10 @@ namespace XeniaRegistrationBackend.Models
 
         public DateTime SubscriptionEndDate { get; set; }
 
-        public decimal SubscriptionAmount { get; set; }
-
-        public int SubscriptionDays { get; set; }
-        public int SubscriptionUserCount { get; set; }  // ✅ already in DB
-
+        public decimal? SubscriptionAmount { get; set; }
+        public int? SubscriptionDays { get; set; }
+        public int? SubscriptionUserCount { get; set; }
+        public int? PlanDurationId { get; set; }
 
         [MaxLength(50)]
         public string Status { get; set; } = "ACTIVE";

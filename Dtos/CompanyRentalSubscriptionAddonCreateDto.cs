@@ -6,6 +6,7 @@
         public int PlanId { get; set; }
         public int CompanyId { get; set; }
         public decimal Amount { get; set; }
-        public string Status { get; set; }
+        public int UserCount { get; set; }
+        public string? Status { get; set; }  // ✅ Make nullable, default will be set in repository
     }
 }

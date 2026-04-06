@@ -667,7 +667,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                             d.Price == latestSub.SubscriptionAmount &&
                             d.IsActive)
                         .OrderBy(d => d.DurationDays)
-                        .Select(d => d.DurationDays)
+                       .Select(d => (int?)d.DurationDays)
                         .FirstOrDefaultAsync();
 
                     subDto = new SubscriptionRentalSummaryDto
@@ -676,8 +676,8 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                         Status = latestSub.Status,
                         StartDate = latestSub.SubscriptionStartDate,
                         EndDate = latestSub.SubscriptionEndDate,
-                        Amount = latestSub.SubscriptionAmount,
-                        UserCount = latestSub.SubscriptionUserCount,
+                        Amount = latestSub.SubscriptionAmount ?? 0,
+                        UserCount = latestSub.SubscriptionUserCount ?? 0,
                         PlanName = planName ?? string.Empty,
                         DurationDays = durationDays
                     };
@@ -700,73 +700,445 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
             return result;
         }
 
+        //OLD CODE/// 
+
+
+
+        //public async Task<CompanyRentalDetailDto?> GetRentalCompanyByIdAsync(int companyId)
+        //{
+        //    var company = await _recontext.Company
+        //        .FirstOrDefaultAsync(c => c.companyID == companyId);
+        //    if (company == null) return null;
+
+        //    var latestSub = await _recontext.CompanySubscription
+        //        .Where(s => s.CompanyId == companyId)
+        //        .OrderByDescending(s => s.SubscriptionEndDate)
+        //        .FirstOrDefaultAsync();
+
+        //    SubscriptionRentalSummaryDto? subDto = null;
+
+        //    if (latestSub != null)
+        //    {
+        //        var planName = await _recontext.SubscribePlan
+        //            .Where(p => p.PlanId == latestSub.PlanId)
+        //            .Select(p => p.PlanName)
+        //            .FirstOrDefaultAsync();
+
+        //        var durationDays = await _recontext.SubscribePlanDurations
+        //            .Where(d =>
+        //                d.PlanId == latestSub.PlanId &&
+        //                d.Price == latestSub.SubscriptionAmount &&
+        //                d.IsActive)
+        //            .OrderBy(d => d.DurationDays)
+        //            .Select(d => d.DurationDays)
+        //            .FirstOrDefaultAsync();
+
+        //        subDto = new SubscriptionRentalSummaryDto
+        //        {
+        //            SubId = latestSub.SubId,
+        //            Status = latestSub.Status,
+        //            StartDate = latestSub.SubscriptionStartDate,
+        //            EndDate = latestSub.SubscriptionEndDate,
+        //            Amount = latestSub.SubscriptionAmount,
+        //            UserCount = latestSub.SubscriptionUserCount,
+        //            PlanName = planName ?? string.Empty,
+        //            DurationDays = durationDays
+        //        };
+        //    }
+
+        //    return new CompanyRentalDetailDto
+        //    {
+        //        Company = new CompanyRentalListDto
+        //        {
+        //            CompanyId = company.companyID,
+        //            CompanyName = company.companyName,
+        //            IsActive = company.IsActive,
+        //            PhoneNumber = company.phoneNumber,
+        //            Address = company.address,
+        //            Email = company.email,
+        //            Pin = company.pin,
+        //            Country = company.Country,
+        //            Subscription = subDto
+        //        },
+        //        Settings = await _recontext.CompanySetting
+        //            .Where(s => s.CompanyId == companyId)
+        //            .Select(s => new CompanyRentalSettingsDto
+        //            {
+        //                KeyCode = s.KeyCode,
+        //                Value = s.Value
+        //            })
+        //            .ToListAsync()
+        //    };
+        //}
+        //public async Task<CompanyRentalDetailDto?> GetRentalCompanyByIdAsync(int companyId)
+        //{
+        //    try
+        //    {
+        //        var company = await _recontext.Company
+        //            .FirstOrDefaultAsync(c => c.companyID == companyId);
+        //        if (company == null) return null;
+
+        //        var user = await _recontext.Users
+        //            .Where(u => u.CompanyID == companyId)
+        //            .FirstOrDefaultAsync();
+
+        //        // ✅ Get latest NON-PENDING subscription
+        //        var latestSub = await _recontext.CompanySubscription
+        //            .Where(s => s.CompanyId == companyId)
+        //            .OrderByDescending(s => s.SubscriptionEndDate)
+        //            .FirstOrDefaultAsync();
+
+        //        SubscriptionRentalSummaryDto? subDto = null;
+
+        //        if (latestSub != null)
+        //        {
+        //            string? planName = null;
+        //            int? durationDays = null;
+
+        //            // ✅ Only lookup plan info if it's a real plan (not TRIAL)
+        //            if (latestSub.PlanId != 0)
+        //            {
+        //                planName = await _recontext.SubscribePlan
+        //                    .Where(p => p.PlanId == latestSub.PlanId)
+        //                    .Select(p => p.PlanName)
+        //                    .FirstOrDefaultAsync();
+
+        //                // ✅ No price filter — just get by PlanId, prefer active
+        //                durationDays = await _recontext.SubscribePlanDurations
+        //                    .Where(d => d.PlanId == latestSub.PlanId)
+        //                    .OrderByDescending(d => d.IsActive)
+        //                    .Select(d => (int?)d.DurationDays)
+        //                    .FirstOrDefaultAsync();
+        //            }
+
+        //            // ✅ Calculate real status
+        //            string realStatus = latestSub.Status?.Trim().ToUpper() ?? "UNKNOWN";
+        //            var currentDate = DateTime.Now;
+
+        //            if (realStatus == "ACTIVE" && latestSub.SubscriptionEndDate < currentDate)
+        //                realStatus = "EXPIRED";
+        //            else if (realStatus == "TRIAL" && latestSub.SubscriptionEndDate < currentDate)
+        //                realStatus = "TRIAL_EXPIRED";
+
+        //            subDto = new SubscriptionRentalSummaryDto
+        //            {
+        //                SubId = latestSub.SubId,
+        //                Status = realStatus,
+        //                StartDate = latestSub.SubscriptionStartDate,
+        //                EndDate = latestSub.SubscriptionEndDate,
+        //                Amount = latestSub.SubscriptionAmount ?? 0,
+        //                UserCount = latestSub.SubscriptionUserCount ?? 0,
+        //                PlanName = planName ?? string.Empty,
+        //                DurationDays = durationDays
+        //            };
+        //        }
+
+        //        var settings = await _recontext.CompanySetting
+        //            .Where(s => s.CompanyId == companyId)
+        //            .Select(s => new CompanyRentalSettingsDto
+        //            {
+        //                KeyCode = s.KeyCode,
+        //                Value = s.Value
+        //            })
+        //            .ToListAsync();
+
+        //        return new CompanyRentalDetailDto
+        //        {
+        //            Company = new CompanyRentalListDto
+        //            {
+        //                CompanyId = company.companyID,
+        //                CompanyName = company.companyName,
+        //                IsActive = company.IsActive,
+        //                PhoneNumber = company.phoneNumber,
+        //                Address = company.address,
+        //                Email = company.email,
+        //                Pin = company.pin,
+        //                Country = company.Country,
+
+        //                Subscription = subDto
+        //            },
+        //            Settings = settings
+        //        };
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        // ✅ Log the exact error
+        //        throw new Exception($"GetRentalCompanyByIdAsync failed for companyId {companyId}: {ex.Message}", ex);
+        //    }
+        //}
+
+
+
+
+        //        public async Task<CompanyRentalDetailDto?> GetRentalCompanyByIdAsync(int companyId)
+        //{
+        //    try
+        //    {
+        //        var company = await _recontext.Company
+        //            .FirstOrDefaultAsync(c => c.companyID == companyId);
+        //        if (company == null) return null;
+
+        //        var user = await _recontext.Users
+        //            .Where(u => u.CompanyID == companyId)
+        //            .FirstOrDefaultAsync();
+
+        //        // ✅ Get latest subscription
+        //        var latestSub = await _recontext.CompanySubscription
+        //            .Where(s => s.CompanyId == companyId)
+        //            .OrderByDescending(s => s.SubscriptionEndDate)
+        //            .FirstOrDefaultAsync();
+
+        //        SubscriptionRentalSummaryDto? subDto = null;
+
+        //        if (latestSub != null)
+        //        {
+        //            string? planName = null;
+        //            int? durationDays = null;
+
+        //            if (latestSub.PlanId != 0)
+        //            {
+        //                planName = await _recontext.SubscribePlan
+        //                    .Where(p => p.PlanId == latestSub.PlanId)
+        //                    .Select(p => p.PlanName)
+        //                    .FirstOrDefaultAsync();
+
+        //                durationDays = await _recontext.SubscribePlanDurations
+        //                    .Where(d => d.PlanId == latestSub.PlanId)
+        //                    .OrderByDescending(d => d.IsActive)
+        //                    .Select(d => (int?)d.DurationDays)
+        //                    .FirstOrDefaultAsync();
+        //            }
+
+        //            // ✅ Calculate real status
+        //            string realStatus = latestSub.Status?.Trim().ToUpper() ?? "UNKNOWN";
+        //            var currentDate = DateTime.Now;
+
+        //            if (realStatus == "ACTIVE" && latestSub.SubscriptionEndDate < currentDate)
+        //                realStatus = "EXPIRED";
+        //            else if (realStatus == "TRIAL" && latestSub.SubscriptionEndDate < currentDate)
+        //                realStatus = "TRIAL_EXPIRED";
+
+        //            // ✅ ADDONS
+        //            var addons = await _recontext.CompanySubscriptionAddon
+        //                .Where(a => a.CompanyId == companyId && a.Status == "ACTIVE")
+        //                .Select(a => new SubscriptionAddonDto
+        //                {
+        //                    PlanId = a.PlanId,
+        //                    Amount = a.Amount,
+        //                    UserCount = a.DepCount,
+        //                    Status = a.Status
+        //                })
+        //                .ToListAsync();
+
+        //            subDto = new SubscriptionRentalSummaryDto
+        //            {
+        //                SubId = latestSub.SubId,
+        //                Status = realStatus,
+        //                StartDate = latestSub.SubscriptionStartDate,
+        //                EndDate = latestSub.SubscriptionEndDate,
+        //                Amount = latestSub.SubscriptionAmount ?? 0,
+        //                UserCount = latestSub.SubscriptionUserCount ?? 0,
+        //                PlanName = planName ?? string.Empty,
+        //                DurationDays = durationDays ?? 0,
+        //                Addons = addons   // ✅ ADDED
+        //            };
+        //        }
+
+        //        // ✅ SETTINGS
+        //        var settings = await _recontext.CompanySetting
+        //            .Where(s => s.CompanyId == companyId)
+        //            .Select(s => new CompanyRentalSettingsDto
+        //            {
+        //                KeyCode = s.KeyCode,
+        //                Value = s.Value
+        //            })
+        //            .ToListAsync();
+
+        //        // ✅ SUBSCRIPTION HISTORY (RENEW DETAILS)
+        //        var history = await _recontext.CompanySubscription
+        //            .Where(s => s.CompanyId == companyId)
+        //            .OrderByDescending(s => s.SubscriptionEndDate)
+        //            .Select(s => new SubscriptionHistoryDto
+        //            {
+        //                SubId = s.SubId,
+        //                StartDate = s.SubscriptionStartDate,
+        //                EndDate = s.SubscriptionEndDate,
+        //                Amount = s.SubscriptionAmount ?? 0,
+        //                Status = s.Status
+        //            })
+        //            .ToListAsync();
+
+        //        return new CompanyRentalDetailDto
+        //        {
+        //            Company = new CompanyRentalListDto
+        //            {
+        //                CompanyId = company.companyID,
+        //                CompanyName = company.companyName,
+        //                IsActive = company.IsActive,
+        //                PhoneNumber = company.phoneNumber,
+        //                Address = company.address,
+        //                Email = company.email,
+        //                Pin = company.pin,
+        //                Country = company.Country,
+        //                Subscription = subDto
+        //            },
+        //            Settings = settings,
+        //            SubscriptionHistory = history   // ✅ ADDED
+        //        };
+        //    }
+        //    catch (Exception ex)
+        //    {
+        //        throw new Exception($"GetRentalCompanyByIdAsync failed for companyId {companyId}: {ex.Message}", ex);
+        //    }
+        //}
+
+
         public async Task<CompanyRentalDetailDto?> GetRentalCompanyByIdAsync(int companyId)
         {
-            var company = await _recontext.Company
-                .FirstOrDefaultAsync(c => c.companyID == companyId);
-            if (company == null) return null;
-
-            var latestSub = await _recontext.CompanySubscription
-                .Where(s => s.CompanyId == companyId)
-                .OrderByDescending(s => s.SubscriptionEndDate)
-                .FirstOrDefaultAsync();
-
-            SubscriptionRentalSummaryDto? subDto = null;
-
-            if (latestSub != null)
+            try
             {
-                var planName = await _recontext.SubscribePlan
-                    .Where(p => p.PlanId == latestSub.PlanId)
-                    .Select(p => p.PlanName)
+                var company = await _recontext.Company
+                    .FirstOrDefaultAsync(c => c.companyID == companyId);
+                if (company == null) return null;
+
+                var user = await _recontext.Users
+                    .Where(u => u.CompanyID == companyId)
                     .FirstOrDefaultAsync();
 
-                var durationDays = await _recontext.SubscribePlanDurations
-                    .Where(d =>
-                        d.PlanId == latestSub.PlanId &&
-                        d.Price == latestSub.SubscriptionAmount &&
-                        d.IsActive)
-                    .OrderBy(d => d.DurationDays)
-                    .Select(d => d.DurationDays)
+                // ✅ Get latest subscription
+                var latestSub = await _recontext.CompanySubscription
+                    .Where(s => s.CompanyId == companyId)
+                    .OrderByDescending(s => s.SubscriptionEndDate)
                     .FirstOrDefaultAsync();
 
-                subDto = new SubscriptionRentalSummaryDto
-                {
-                    SubId = latestSub.SubId,
-                    Status = latestSub.Status,
-                    StartDate = latestSub.SubscriptionStartDate,
-                    EndDate = latestSub.SubscriptionEndDate,
-                    Amount = latestSub.SubscriptionAmount,
-                    UserCount = latestSub.SubscriptionUserCount,
-                    PlanName = planName ?? string.Empty,
-                    DurationDays = durationDays
-                };
-            }
+                SubscriptionRentalSummaryDto? subDto = null;
 
-            return new CompanyRentalDetailDto
-            {
-                Company = new CompanyRentalListDto
+                if (latestSub != null)
                 {
-                    CompanyId = company.companyID,
-                    CompanyName = company.companyName,
-                    IsActive = company.IsActive,
-                    PhoneNumber = company.phoneNumber,
-                    Address = company.address,
-                    Email = company.email,
-                    Pin = company.pin,
-                    Country = company.Country,
-                    Subscription = subDto
-                },
-                Settings = await _recontext.CompanySetting
+                    string? planName = null;
+                    int? durationDays = null;
+
+                    if (latestSub.PlanId != 0)
+                    {
+                        planName = await _recontext.SubscribePlan
+                            .Where(p => p.PlanId == latestSub.PlanId)
+                            .Select(p => p.PlanName)
+                            .FirstOrDefaultAsync();
+
+                        durationDays = await _recontext.SubscribePlanDurations
+                            .Where(d => d.PlanId == latestSub.PlanId)
+                            .OrderByDescending(d => d.IsActive)
+                            .Select(d => (int?)d.DurationDays)
+                            .FirstOrDefaultAsync();
+                    }
+
+                    // ✅ Calculate real status
+                    string realStatus = latestSub.Status?.Trim().ToUpper() ?? "UNKNOWN";
+                    var currentDate = DateTime.Now;
+
+                    if (realStatus == "ACTIVE" && latestSub.SubscriptionEndDate < currentDate)
+                        realStatus = "EXPIRED";
+                    else if (realStatus == "TRIAL" && latestSub.SubscriptionEndDate < currentDate)
+                        realStatus = "TRIAL_EXPIRED";
+
+                    // ✅ Fetch addons linked to this subscription
+                    var addons = await (
+                        from a in _recontext.CompanySubscriptionAddon
+                        join p in _recontext.SubscribePlan on a.PlanId equals p.PlanId
+                        where a.CompanyId == companyId
+                              && a.MainPlanId == latestSub.SubId
+                              && a.Status == "ACTIVE"
+                        select new SubscriptionRentalAddonDto
+                        {
+                            SubAddonId = a.Id,
+                            AddonPlanName = p.PlanName,
+                            Amount = a.Amount,
+                            UserCount = a.UserCount,
+                            Status = a.Status
+                        }
+                    ).ToListAsync();
+
+                    var allSubscriptions = await _recontext.CompanySubscription
+    .Where(s => s.CompanyId == companyId)
+    .OrderByDescending(s => s.SubscriptionEndDate)
+    .ToListAsync();
+
+                    var history = new List<SubscriptionHistoryDto>();
+                    foreach (var sub in allSubscriptions)
+                    {
+                        string subPlanName = string.Empty;
+                        if (sub.PlanId != 0)
+                        {
+                            subPlanName = await _recontext.SubscribePlan
+                                .Where(p => p.PlanId == sub.PlanId)
+                                .Select(p => p.PlanName)
+                                .FirstOrDefaultAsync() ?? string.Empty;
+                        }
+
+                        history.Add(new SubscriptionHistoryDto
+                        {
+                            SubId = sub.SubId,
+                            StartDate = sub.SubscriptionStartDate,
+                            EndDate = sub.SubscriptionEndDate,
+                            Amount = sub.SubscriptionAmount ?? 0,
+                            Status = sub.Status,
+                            PlanName = subPlanName,
+                            DurationDays = sub.SubscriptionDays
+                        });
+                    }
+
+
+
+
+                    subDto = new SubscriptionRentalSummaryDto
+                    {
+                        SubscriptionHistory = history.Any() ? history : null  ,// Add this line
+                        SubId = latestSub.SubId,
+                        Status = realStatus,
+                        StartDate = latestSub.SubscriptionStartDate,
+                        EndDate = latestSub.SubscriptionEndDate,
+                        Amount = latestSub.SubscriptionAmount ?? 0,
+                        UserCount = latestSub.SubscriptionUserCount ?? 0,
+                        PlanName = planName ?? string.Empty,
+                        DurationDays = durationDays,
+                        Addons = addons.Any() ? addons : null
+                    };
+                }
+
+                // ✅ Settings
+                var settings = await _recontext.CompanySetting
                     .Where(s => s.CompanyId == companyId)
                     .Select(s => new CompanyRentalSettingsDto
                     {
                         KeyCode = s.KeyCode,
                         Value = s.Value
                     })
-                    .ToListAsync()
-            };
-        }
+                    .ToListAsync();
 
+                return new CompanyRentalDetailDto
+                {
+                    Company = new CompanyRentalListDto
+                    {
+                        CompanyId = company.companyID,
+                        CompanyName = company.companyName,
+                        IsActive = company.IsActive,
+                        PhoneNumber = company.phoneNumber,
+                        Address = company.address,
+                        Email = company.email,
+                        Pin = company.pin,
+                        Country = company.Country,
+                        //UserName = user?.UserName,
+                        //Password = user?.Password,
+                        Subscription = subDto
+                    },
+                    Settings = settings
+                };
+            }
+            catch (Exception ex)
+            {
+                throw new Exception($"GetRentalCompanyByIdAsync failed for companyId {companyId}: {ex.Message}", ex);
+            }
+        }
         public async Task UpdateRentalCompanyAsync(UpdateRentalCompanyDto dto)
         {
             var company = await _recontext.Company

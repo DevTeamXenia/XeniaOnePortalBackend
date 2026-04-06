@@ -1,0 +1,10 @@
+﻿namespace XeniaRegistrationBackend.Dtos
+{
+    public class SubscriptionAddonDto
+    {
+        public int PlanId { get; set; }
+        public decimal Amount { get; set; }
+        public int UserCount { get; set; }
+        public string Status { get; set; }
+    }
+}

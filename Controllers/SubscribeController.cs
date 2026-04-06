@@ -409,7 +409,17 @@ namespace XeniaRegistrationBackend.Controllers
             });
         }
         
+        [HttpPost("rental/addon")]
+public async Task<IActionResult> CreateRentalAddon([FromBody] CompanyRentalSubscriptionAddonCreateDto dto)
+{
+    var addonId = await _subscribePlanRepository.CreateRentalAddonAsync(dto);
 
+    return Ok(new
+    {
+        status = "success",
+        addonId = addonId
+    });
+}
         [HttpPost("ticket/renew")]
         public async Task<IActionResult> CreateTicketSubscription([FromBody] CompanyTicketSubscriptionCreateDto dto)
         {

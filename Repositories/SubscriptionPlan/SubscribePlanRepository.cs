@@ -648,6 +648,7 @@
                 var subscription = new XRS_CompanySubscription
                 {
                     PlanId = plan.PlanId,
+                    PlanDurationId = duration.PlanDurationId, // ✅ ADD THIS
                     CompanyId = dto.CompanyId,
                     SubscriptionStartDate = startDate,
                     SubscriptionEndDate = endDate,
@@ -671,7 +672,217 @@
             }
         }
 
+        //public async Task<int> CreateRentalAddonAsync(CompanyRentalSubscriptionAddonCreateDto dto)
+        //{
+        //    // ✅ Validate active subscription exists
+        //    var activeSub = await _recontext.CompanySubscription
+        //        .FirstOrDefaultAsync(s =>
+        //            s.CompanyId == dto.CompanyId &&
+        //            s.SubId == dto.MainPlanId &&
+        //            s.Status == "ACTIVE");
 
+        //    if (activeSub == null)
+        //        throw new Exception("No active subscription found for this company");
+
+        //    // ✅ Validate addon plan exists
+        //    var plan = await _recontext.SubscribePlan
+        //        .FirstOrDefaultAsync(p =>
+        //            p.PlanId == dto.PlanId &&
+        //            p.PlanActive == true);
+
+        //    if (plan == null)
+        //        throw new Exception("Invalid or inactive addon plan");
+
+        //    // ✅ Create addon using correct model
+        //    var addon = new XRS_CompanySubscriptionAddon
+        //    {
+        //        MainPlanId = dto.MainPlanId,
+        //        PlanId = dto.PlanId,
+        //        CompanyId = dto.CompanyId,
+        //        Amount = dto.Amount,
+        //        UserCount = dto.UserCount,
+        //        Status = "ACTIVE"
+        //    };
+
+        //    _recontext.CompanySubscriptionAddon.Add(addon);
+        //    await _recontext.SaveChangesAsync();
+
+        //    return addon.SubAddonId;
+        //}
+
+
+
+
+        public async Task<int> CreateRentalAddonAsync(CompanyRentalSubscriptionAddonCreateDto dto)
+        {
+            // ✅ First, verify the subscription exists and is ACTIVE
+            var activeSub = await _recontext.CompanySubscription
+                .FirstOrDefaultAsync(s => s.SubId == dto.MainPlanId);
+
+            if (activeSub == null)
+                throw new Exception($"Subscription with ID {dto.MainPlanId} not found");
+
+            if (activeSub.CompanyId != dto.CompanyId)
+                throw new Exception($"Subscription {dto.MainPlanId} does not belong to company {dto.CompanyId}");
+
+            if (activeSub.Status != "ACTIVE")
+                throw new Exception($"Subscription status is '{activeSub.Status}', not 'ACTIVE'");
+
+            if (activeSub.SubscriptionEndDate < DateTime.Now)
+                throw new Exception("Subscription has expired");
+
+            // ✅ Rest of the code remains the same...
+            var plan = await _recontext.SubscribePlan
+                .FirstOrDefaultAsync(p => p.PlanId == dto.PlanId && p.PlanActive == true);
+
+            if (plan == null)
+                throw new Exception("Invalid or inactive addon plan");
+
+            var existingAddon = await _recontext.CompanySubscriptionAddon
+                .FirstOrDefaultAsync(a =>
+                    a.MainPlanId == dto.MainPlanId &&
+                    a.PlanId == dto.PlanId &&
+                    a.CompanyId == dto.CompanyId &&
+                    a.Status == "ACTIVE");
+
+            if (existingAddon != null)
+                throw new Exception("This addon is already active");
+
+            var addon = new XRS_CompanySubscriptionAddon
+            {
+                MainPlanId = dto.MainPlanId,
+                PlanId = dto.PlanId,
+                CompanyId = dto.CompanyId,
+                Amount = dto.Amount,
+                UserCount = dto.UserCount,
+                Status = "ACTIVE",
+                //CreatedOn = DateTime.UtcNow
+            };
+
+            _recontext.CompanySubscriptionAddon.Add(addon);
+            await _recontext.SaveChangesAsync();
+
+
+            return addon.Id;  // ← Returns Id, not SubAddonId
+        }
+        //public async Task<SubscriptionRentalSummaryDto?> GetRentalSubscriptionSummaryAsync(int companyId)
+        //{
+        //    var latestSub = await _recontext.CompanySubscription
+        //        .Where(s => s.CompanyId == companyId)
+        //        .OrderByDescending(s => s.SubscriptionEndDate)
+        //        .FirstOrDefaultAsync();
+
+        //    if (latestSub == null) return null;
+
+        //    var planName = await _recontext.SubscribePlan
+        //        .Where(p => p.PlanId == latestSub.PlanId)
+        //        .Select(p => p.PlanName)
+        //        .FirstOrDefaultAsync();
+
+        //    var addons = await _recontext.CompanySubscriptionAddon
+        //        .Where(a => a.CompanyId == companyId && a.MainPlanId == latestSub.SubId && a.Status == "ACTIVE")
+        //        .Select(a => new SubscriptionAddonDto
+        //        {
+        //            PlanId = a.PlanId,
+        //            Amount = a.Amount,
+        //            UserCount = a.DepCount,
+        //            Status = a.Status
+        //        })
+        //        .ToListAsync();
+
+        //    var history = await _recontext.CompanySubscription
+        //        .Where(s => s.CompanyId == companyId)
+        //        .OrderByDescending(s => s.SubscriptionEndDate)
+        //        .Select(s => new SubscriptionHistoryDto
+        //        {
+        //            SubId = s.SubId,
+        //            StartDate = s.SubscriptionStartDate,
+        //            EndDate = s.SubscriptionEndDate,
+        //            Amount = s.SubscriptionAmount ?? 0,
+        //            Status = s.Status
+        //        })
+        //        .ToListAsync();
+
+        //    return new SubscriptionRentalSummaryDto
+        //    {
+        //        SubId = latestSub.SubId,
+        //        Status = latestSub.Status,
+        //        StartDate = latestSub.SubscriptionStartDate,
+        //        EndDate = latestSub.SubscriptionEndDate,
+        //        Amount = latestSub.SubscriptionAmount ?? 0,
+        //        UserCount = latestSub.SubscriptionUserCount ?? 0,
+        //        PlanName = planName ?? string.Empty,
+        //        DurationDays = latestSub.SubscriptionDays ?? 0,
+        //        Addons = addons,
+        //        SubscriptionHistory = history
+        //    };
+        //}
+
+        public async Task<SubscriptionRentalSummaryDto?> GetRentalSubscriptionSummaryAsync(int companyId)
+        {
+            var latestSub = await _recontext.CompanySubscription
+                .Where(s => s.CompanyId == companyId)
+                .OrderByDescending(s => s.SubscriptionEndDate)
+                .FirstOrDefaultAsync();
+
+            if (latestSub == null) return null;
+
+            string? planName = null;
+            int? durationDays = null;
+
+            if (latestSub.PlanId != 0)
+            {
+                planName = await _recontext.SubscribePlan
+                    .Where(p => p.PlanId == latestSub.PlanId)
+                    .Select(p => p.PlanName)
+                    .FirstOrDefaultAsync();
+
+                durationDays = await _recontext.SubscribePlanDurations
+                    .Where(d => d.PlanId == latestSub.PlanId)
+                    .OrderByDescending(d => d.IsActive)
+                    .Select(d => (int?)d.DurationDays)
+                    .FirstOrDefaultAsync();
+            }
+
+            // ✅ Fixed: use UserCount not DepCount, use SubscriptionRentalAddonDto
+            var addons = await (
+                from a in _recontext.CompanySubscriptionAddon
+                join p in _recontext.SubscribePlan on a.PlanId equals p.PlanId
+                where a.CompanyId == companyId
+                      && a.MainPlanId == latestSub.SubId
+                      && a.Status == "ACTIVE"
+                select new SubscriptionRentalAddonDto
+                {
+                    SubAddonId = a.Id,
+                    AddonPlanName = p.PlanName,
+                    Amount = a.Amount,
+                    UserCount = a.UserCount,   // ✅ UserCount not DepCount
+                    Status = a.Status
+                }
+            ).ToListAsync();
+
+            // ✅ Calculate real status
+            string realStatus = latestSub.Status?.Trim().ToUpper() ?? "UNKNOWN";
+            var currentDate = DateTime.Now;
+
+            if (realStatus == "ACTIVE" && latestSub.SubscriptionEndDate < currentDate)
+                realStatus = "EXPIRED";
+            else if (realStatus == "TRIAL" && latestSub.SubscriptionEndDate < currentDate)
+                realStatus = "TRIAL_EXPIRED";
+
+            return new SubscriptionRentalSummaryDto
+            {
+                SubId = latestSub.SubId,
+                Status = realStatus,
+                StartDate = latestSub.SubscriptionStartDate,
+                EndDate = latestSub.SubscriptionEndDate,
+                Amount = latestSub.SubscriptionAmount ?? 0,
+                UserCount = latestSub.SubscriptionUserCount ?? 0,
+                PlanName = planName ?? string.Empty,
+                DurationDays = durationDays,
+                Addons = addons.Any() ? addons : null
+            };
+        }
         #endregion
 
         #region TICKET
