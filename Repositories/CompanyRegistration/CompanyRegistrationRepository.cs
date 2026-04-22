@@ -1127,6 +1127,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                         Email = company.email,
                         Pin = company.pin,
                         Country = company.Country,
+                        Logo = company.logo,
                         //UserName = user?.UserName,
                         //Password = user?.Password,
                         Subscription = subDto
@@ -1148,6 +1149,10 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
             company.companyName = dto.CompanyName;
             company.address = dto.Address;
             company.Country = dto.Country;
+            company.email = dto.Email;           // ← ADD
+            company.phoneNumber = dto.PhoneNumber; // ← ADD
+            company.pin = dto.Pin;               // ← ADD
+            company.logo = dto.Logo;             // ← ADD
 
             _recontext.CompanySetting.RemoveRange(
                 _recontext.CompanySetting.Where(s => s.CompanyId == dto.CompanyId));
