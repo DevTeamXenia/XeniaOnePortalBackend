@@ -18,6 +18,7 @@ namespace XeniaRegistrationBackend.Controllers
             _repositoryCompanyRegistration = repositoryCompanyRegistration;
         }
 
+
         #region TEMPLE
 
 
@@ -191,6 +192,38 @@ namespace XeniaRegistrationBackend.Controllers
                 UserName = request.userName,
                 Password = request.password,
                 Message = "Company registered successfully"
+            });
+        }
+
+        #endregion
+
+
+        #region XENIA 1
+
+        [HttpGet("XeniaOne")]
+        public async Task<IActionResult> GetAllCatalogCompany()
+            => Ok(await _repositoryCompanyRegistration.GetAllCatalogCompaniesAsync());
+
+
+        [HttpGet("XeniaOne/{id}")]
+        public async Task<IActionResult> GetCatalogCompanyByIdAsync(int id)
+        {
+            var result = await _repositoryCompanyRegistration.GetCatalogCompanyByIdAsync(id);
+            return result == null ? NotFound() : Ok(result);
+        }
+
+
+        [HttpPost("XeniaOne/register")]
+        public async Task<IActionResult> RegisterCatalogCompanyAsync([FromBody] CompanyCatalogRegistrationRequestDto request)
+        {
+            var companyId = await _repositoryCompanyRegistration.RegisterCatalogCompanyAsync(request);
+            return Ok(new
+            {
+                Status = "Success",
+                CompanyId = companyId,
+                UserName = request.UserName,
+                Password = request.Password,
+                Message = "Catalog company registered successfully"
             });
         }
 

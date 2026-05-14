@@ -1,5 +1,6 @@
 ﻿using XeniaRegistrationBackend.Dtos;
 using XeniaRegistrationBackend.Models;
+using XeniaRegistrationBackend.Models.Catalog;
 using XeniaRegistrationBackend.Models.Temple;
 
 namespace XeniaRegistrationBackend.Repositories.PlanModule
@@ -16,5 +17,13 @@ namespace XeniaRegistrationBackend.Repositories.PlanModule
         Task<bool> UpdateRentalPlanModuleAsync(int subPlanId, XRS_PlanModuleMap request);
         Task<PlanModuleMapResponseDto?> GetRentalPlanModuleByIdAsync(int subPlanId);
         Task<List<PlanModuleMapResponseDto>> GetRentalAllAsync();
+
+
+
+
+        Task<List<int>> CreateCatalogPlanModuleAsync(List<CT_PlanModuleMap> request);
+        Task<bool> UpdateCatalogPlanModuleAsync(List<CT_PlanModuleMap> request);
+        Task<SubscriptionCatalogPlanResponseDto?> GetCatalogPlanModuleByIdAsync(int id);
+        Task<List<SubscriptionCatalogPlanResponseDto>> GetCatalogAllAsync();
     }
 }

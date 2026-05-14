@@ -27,5 +27,10 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
         Task<List<CompanyTicketListDto>> GetAllTicketCompaniesAsync();
         Task<CompanyTicketDetailDto?> GetTicketCompanyByIdAsync(int companyId);
         Task UpdateTicketCompanyAsync(UpdateTicketCompanyDto dto);
+
+
+        Task<int> RegisterCatalogCompanyAsync(CompanyCatalogRegistrationRequestDto request);
+        Task<List<CompanyCatalogListDto>> GetAllCatalogCompaniesAsync();
+        Task<CompanyCatalogDetailDto?> GetCatalogCompanyByIdAsync(int companyId);
     }
 }

@@ -1,4 +1,4 @@
-﻿namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
+namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
 {
     using Microsoft.EntityFrameworkCore;
     using XeniaRegistrationBackend.Dtos;
@@ -8,6 +8,7 @@
     using XeniaRegistrationBackend.Models.Ticket;
     using XeniaRegistrationBackend.Models.Token;
     using XeniaRegistrationBackend.Models.Token.XeniaTempleBackend.Models;
+    using XeniaRegistrationBackend.Models.Catalog;
 
     public class SubscribePlanRepository : ISubscribePlanRepository
     {
@@ -15,13 +16,15 @@
         private readonly TokenDbContext  _tocontext;
         private readonly RentalDbContext _recontext;
         private readonly TicketDbContext _ticontext;
+        private readonly CatalogDbContext _cacontext;
 
-        public SubscribePlanRepository(TempleDbContext tecontext, TokenDbContext tocontext, RentalDbContext recontext, TicketDbContext ticontext)
+        public SubscribePlanRepository(TempleDbContext tecontext, TokenDbContext tocontext, RentalDbContext recontext, TicketDbContext ticontext, CatalogDbContext cacontext)
         {
             _tecontext = tecontext;
             _tocontext = tocontext;
             _recontext = recontext;
             _ticontext = ticontext;
+            _cacontext = cacontext;
         }
 
 
@@ -1070,6 +1073,690 @@
                 await transaction.RollbackAsync();
                 throw;
             }
+        }
+
+        #endregion
+
+
+        #region CATALOG
+
+
+
+        public async Task<int> CreateCatalogModuleAsync(CT_Module request)
+        {
+            var module = new CT_Module
+            {
+                ModuleName = request.ModuleName,
+                ModuleDescription = request.ModuleDescription,  // ← Added
+                ModuleActive = request.ModuleActive             // ← Using ModuleActive
+            };
+
+            _cacontext.Modules.Add(module);
+            await _cacontext.SaveChangesAsync();
+
+            return module.ModuleId;
+        }
+
+        public async Task<bool> UpdateCatalogModuleAsync(int moduleId, CT_Module request)
+        {
+            var module = await _cacontext.Modules.FindAsync(moduleId);
+            if (module == null) return false;
+
+            module.ModuleName = request.ModuleName;
+            module.ModuleDescription = request.ModuleDescription;  // ← Added
+            module.ModuleActive = request.ModuleActive;             // ← Using ModuleActive
+
+            await _cacontext.SaveChangesAsync();
+            return true;
+        }
+
+        public async Task<IEnumerable<CT_Module>> GetAllCatalogModuleAsync()
+        {
+            return await _cacontext.Modules
+                .Select(m => new CT_Module
+                {
+                    ModuleId = m.ModuleId,
+                    ModuleName = m.ModuleName,
+                    ModuleDescription = m.ModuleDescription,  // ← Added
+                    ModuleActive = m.ModuleActive              // ← Using ModuleActive
+                })
+                .ToListAsync();
+        }
+
+        public async Task<CT_Module?> GetByIdCatalogModuleAsync(int moduleId)
+        {
+            return await _cacontext.Modules
+                .Where(m => m.ModuleId == moduleId)
+                .Select(m => new CT_Module
+                {
+                    ModuleId = m.ModuleId,
+                    ModuleName = m.ModuleName,
+                    ModuleDescription = m.ModuleDescription,  // ← Added
+                    ModuleActive = m.ModuleActive              // ← Using ModuleActive
+                })
+                .FirstOrDefaultAsync();
+        }
+
+
+
+
+
+
+
+
+
+
+        public async Task<int> CreateCatalogSpecialRateAsync(CatalogSpecialRateCreateDto dto)
+        {
+            var rate = new CT_SubscriptionSpecialRate
+            {
+                CustomerId = dto.CustomerId,
+                CompanyId = dto.CompanyId,
+                PlanId = dto.PlanId,
+                PlanDurationId = dto.PlanDurationId,
+                AddonId = dto.AddonId,
+                CustomRate = dto.CustomRate,  // ← changed from MRP
+                UserId = dto.UserId,
+                IsActive = true,
+                CreatedOn = DateTime.Now
+            };
+
+            _cacontext.SubscriptionSpecialRate.Add(rate);
+            await _cacontext.SaveChangesAsync();
+
+            return rate.Id;
+        }
+
+
+
+        //public async Task<SubscriptionCatalogueSummaryDto?> GetCatalogSubscriptionSummaryAsync(int companyId)
+        //{
+        //    var latestSub = await _cacontext.CompanySubscriptions
+        //        .Where(s => s.CompanyId == companyId)
+        //        .OrderByDescending(s => s.SubscriptionEndDate)
+        //        .FirstOrDefaultAsync();
+
+        //    if (latestSub == null)
+        //        return null;
+
+        //    var plan = await _cacontext.SubscribePlan
+        //        .FirstOrDefaultAsync(p => p.PlanId == latestSub.PlanId);
+        //    var addons = await _cacontext.CompanySubscriptionAddon
+        //        .Where(a => a.CompanyId == companyId &&
+        //                    a.MainPlanId == latestSub.SubId &&
+        //                    a.Status == "ACTIVE")
+        //        .Select(a => new CatalogueAddonSummaryDto
+        //        {
+        //            SubAddonId = a.Id,
+        //            UserCount = a.UserCount,
+        //            Amount = a.Amount,
+        //            Status = a.Status
+        //        })
+        //        .ToListAsync();
+
+        //    return new SubscriptionCatalogueSummaryDto
+        //    {
+        //        SubId = latestSub.SubId,
+        //        PlanName = plan?.PlanName,
+        //        StartDate = latestSub.SubscriptionStartDate,
+        //        EndDate = latestSub.SubscriptionEndDate,
+        //        Status = latestSub.Status,
+        //        Amount = latestSub.SubscriptionAmount ?? 0,
+        //        DealerAmount = latestSub.DealerAmount,
+        //        UserCount = latestSub.SubscriptionUserCount ?? 0,
+        //        Addons = addons
+        //    };
+        //}
+        public async Task<SubscriptionCatalogueSummaryDto?> GetCatalogSubscriptionSummaryAsync(int companyId)
+        {
+            var latestSub = await _cacontext.CompanySubscriptions
+                .Where(s => s.CompanyId == companyId)
+                .OrderByDescending(s => s.SubscriptionEndDate)
+                .FirstOrDefaultAsync();
+
+            if (latestSub == null)
+                return null;
+
+            var plan = await _cacontext.SubscribePlan
+                .FirstOrDefaultAsync(p => p.PlanId == latestSub.PlanId);
+
+            // ← Fix DurationDays — get from subscription directly
+            var durationDays = latestSub.SubscriptionDays;
+
+            // ← Fix addons with plan name join
+            var addons = await (
+                from a in _cacontext.CompanySubscriptionAddon
+                join p in _cacontext.SubscribePlan on a.PlanId equals p.PlanId into pj
+                from p in pj.DefaultIfEmpty()
+                where a.CompanyId == companyId
+                      && a.MainPlanId == latestSub.SubId
+                      && a.Status == "ACTIVE"
+                select new CatalogueAddonSummaryDto
+                {
+                    SubAddonId = a.Id,
+                    AddonPlanName = p != null ? p.PlanName : "Unknown",  // ← fix null
+                    Amount = a.Amount,
+                    DealerAmount = a.DealerAmount,
+                    RateType = a.RateType,
+                    UserCount = a.UserCount,
+                    Status = a.Status
+                }
+            ).ToListAsync();
+
+            // ← Fix real status
+            string realStatus = latestSub.Status?.Trim().ToUpper() ?? "UNKNOWN";
+            if (realStatus == "ACTIVE" && latestSub.SubscriptionEndDate < DateTime.Now)
+                realStatus = "EXPIRED";
+
+            return new SubscriptionCatalogueSummaryDto
+            {
+                SubId = latestSub.SubId,
+                PlanName = plan?.PlanName,
+                StartDate = latestSub.SubscriptionStartDate,
+                EndDate = latestSub.SubscriptionEndDate,
+                Status = realStatus,
+                Amount = latestSub.SubscriptionAmount ?? 0,
+                DealerAmount = latestSub.DealerAmount,
+                RateType = latestSub.RateType,
+                UserCount = latestSub.SubscriptionUserCount ?? 0,
+                DurationDays = durationDays,  // ← from subscription directly
+                Addons = addons.Any() ? addons : null
+            };
+        }
+
+        // CREATE PLAN
+        public async Task<int> CreateCatalogSubscribePlanAsync(SubscribeCataloguePlanRequestDto request)
+        {
+            var plan = new CT_SubscribePlan
+            {
+                PlanName = request.PlanName,
+                PlanDescription = request.PlanDescription,
+                PlanUsers = request.PlanUsers,
+                PlanIsAddOn = request.PlanIsAddOn,
+                PlanActive = request.PlanActive,
+                CreatedOn = DateTime.Now
+            };
+
+            _cacontext.SubscribePlan.Add(plan);
+            await _cacontext.SaveChangesAsync();
+
+            var durations = request.Durations.Select(d => new CT_SubscribePlanDuration
+            {
+                PlanId = plan.PlanId,
+                DurationDays = d.DurationDays,
+                Price = d.Price,
+                DealerPrice = d.DealerPrice,
+                //CustomPrice = d.CustomPrice,
+                IsActive = true,
+                CreatedOn = DateTime.Now
+            });
+
+            _cacontext.SubscribePlanDuration.AddRange(durations);
+
+            await _cacontext.SaveChangesAsync();
+
+            return plan.PlanId;
+        }
+
+
+        public async Task<bool> CreateCatalogSubscribeUpdateAsync(int planId, SubscribeCataloguePlanRequestDto request)
+        {
+            using var tx = await _cacontext.Database.BeginTransactionAsync();
+
+            var plan = await _cacontext.SubscribePlan
+                .Include(p => p.PlanDurations)
+                .FirstOrDefaultAsync(p => p.PlanId == planId);
+
+            if (plan == null) return false;
+
+            plan.PlanName = request.PlanName;
+            plan.PlanDescription = request.PlanDescription;
+            plan.PlanUsers = request.PlanUsers;
+            plan.PlanIsAddOn = request.PlanIsAddOn;
+            plan.PlanActive = request.PlanActive;
+            plan.ModifiedOn = DateTime.Now;
+
+            foreach (var d in plan.PlanDurations)
+                d.IsActive = false;
+
+            var newDurations = request.Durations.Select(d => new CT_SubscribePlanDuration
+            {
+                PlanId = plan.PlanId,
+                DurationDays = d.DurationDays,
+                Price = d.Price,
+                DealerPrice = d.DealerPrice,
+                //CustomPrice = d.CustomPrice,
+                IsActive = true,
+                CreatedOn = DateTime.Now
+            }).ToList();
+
+            await _cacontext.SubscribePlanDuration.AddRangeAsync(newDurations);
+            await _cacontext.SaveChangesAsync();
+            await tx.CommitAsync();
+
+            return true;
+        }
+
+       
+        // GET ALL PLANS
+        public async Task<IEnumerable<SubscribeCatalogPlanResponseDto>> GetAllCatalogSubscriptionPlanAsync()
+        {
+            return await _cacontext.SubscribePlan
+                .Include(x => x.PlanDurations)
+                .Select(x => new SubscribeCatalogPlanResponseDto
+                {
+                    PlanId = x.PlanId,
+                    PlanName = x.PlanName,
+                    PlanDescription = x.PlanDescription,
+                    PlanUsers = x.PlanUsers ?? 0,
+                    PlanIsAddOn = x.PlanIsAddOn,
+                    PlanActive = x.PlanActive,
+
+                    Durations = x.PlanDurations
+                        .Where(d => d.IsActive)
+                        .Select(d => new CatalogPlanDurationResponseDto
+                        {
+                            PlanDurationId = d.PlanDurationId,
+                            DurationDays = d.DurationDays,
+                            Price = d.Price,
+                            DealerPrice = d.DealerPrice,
+                            //CustomPrice = d.CustomPrice
+                        }).ToList()
+                }).ToListAsync();
+        }
+      
+        public async Task<SubscribeCatalogPlanResponseDto?> GetSubscriptionCatalogPlanByIdAsync(int planId)
+        {
+            return await _cacontext.SubscribePlan
+                .Include(x => x.PlanDurations)
+                .Where(x => x.PlanId == planId)
+                .Select(x => new SubscribeCatalogPlanResponseDto
+                {
+                    PlanId = x.PlanId,
+                    PlanName = x.PlanName,
+                    PlanDescription = x.PlanDescription,
+                    PlanUsers = x.PlanUsers ?? 0,
+                    PlanIsAddOn = x.PlanIsAddOn,
+                    PlanActive = x.PlanActive,
+
+                    Durations = x.PlanDurations
+                        .Where(d => d.IsActive)
+                        .Select(d => new CatalogPlanDurationResponseDto
+                        {
+                            PlanDurationId = d.PlanDurationId,
+                            DurationDays = d.DurationDays,
+                            Price = d.Price,
+                            DealerPrice = d.DealerPrice,
+                            //CustomPrice = d.CustomPrice
+                        }).ToList()
+                }).FirstOrDefaultAsync();
+        }
+
+
+        public async Task<int> CreateCatalogSubscriptionAsync(CompanyCatalogSubscriptionCreateDto dto)
+        {
+            using var tx = await _cacontext.Database.BeginTransactionAsync();
+
+            // 1. Expire old subscription
+            var activeSub = await _cacontext.CompanySubscriptions
+                .FirstOrDefaultAsync(x => x.CompanyId == dto.CompanyId && x.Status == "ACTIVE");
+
+            if (activeSub != null)
+            {
+                activeSub.Status = "EXPIRED";
+                activeSub.SubscriptionEndDate = DateTime.Now;
+
+                var activeAddons = await _cacontext.CompanySubscriptionAddon
+                    .Where(x => x.CompanyId == dto.CompanyId && x.Status == "ACTIVE")
+                    .ToListAsync();
+
+                foreach (var a in activeAddons)
+                    a.Status = "EXPIRED";
+            }
+
+            // 2. Validate Plan
+            var plan = await _cacontext.SubscribePlan
+                .FirstOrDefaultAsync(x => x.PlanId == dto.PlanId && x.PlanActive);
+
+            if (plan == null)
+                throw new Exception("Invalid plan");
+
+            // 3. Validate Duration
+            var duration = await _cacontext.SubscribePlanDuration
+                .FirstOrDefaultAsync(x =>
+                    x.PlanId == dto.PlanId &&
+                    x.PlanDurationId == dto.PlanDurationId &&
+                    x.IsActive);
+
+            if (duration == null)
+                throw new Exception("Invalid duration");
+
+            // 4. Check for Custom Rate (Customer special pricing)
+            var customRate = await _cacontext.SubscriptionSpecialRate
+                .FirstOrDefaultAsync(x =>
+                    x.CompanyId == dto.CompanyId &&
+                    x.CustomerId == dto.CustomerId &&
+                    x.PlanId == dto.PlanId &&
+                    x.PlanDurationId == dto.PlanDurationId &&
+                    x.IsActive);
+
+            // ✅ Calculate Final Amount (Customer Price)
+            decimal finalAmountValue = (decimal)((customRate != null && customRate.CustomRate > 0)
+                ? customRate.CustomRate : duration.Price);
+
+            // ✅ Calculate Dealer Amount
+            decimal? dealerAmountValue = dto.DealerAmount;
+
+            // If DealerAmount not provided in request, use duration's DealerPrice
+            if (dealerAmountValue == null && duration.DealerPrice.HasValue)
+            {
+                dealerAmountValue = duration.DealerPrice;
+            }
+
+            // If no dealer price at all, use the final amount
+            if (dealerAmountValue == null)
+            {
+                dealerAmountValue = finalAmountValue;
+            }
+
+            // 5. CREATE SUBSCRIPTION
+            var start = DateTime.Now;
+            var end = start.AddDays(duration.DurationDays).AddTicks(-1);
+
+            var sub = new CT_CompanySubscription
+            {
+                CompanyId = dto.CompanyId,
+                CustomerId = dto.CustomerId,
+                PlanId = dto.PlanId,
+                PlanDurationId = dto.PlanDurationId,
+                SubscriptionStartDate = start,
+                SubscriptionEndDate = end,
+                SubscriptionDays = duration.DurationDays,
+                SubscriptionAmount = finalAmountValue,
+                DealerAmount = dealerAmountValue,  // ✅ Store Dealer Amount
+                SubscriptionUserCount = plan.PlanUsers,
+                Status = "ACTIVE",
+                RateType = customRate != null ? "CUSTOM" : "STANDARD",
+                CreatedOn = DateTime.Now
+            };
+
+            _cacontext.CompanySubscriptions.Add(sub);
+            await _cacontext.SaveChangesAsync();
+
+            // 6. ADDONS
+            if (dto.Addons?.Any() == true)
+            {
+                foreach (var a in dto.Addons)
+                {
+                    var addonPlan = await _cacontext.SubscribePlan
+                        .FirstOrDefaultAsync(x => x.PlanId == a.PlanId && x.PlanActive && x.PlanIsAddOn == true);
+
+                    if (addonPlan == null)
+                        continue;
+
+                    var addonDuration = await _cacontext.SubscribePlanDuration
+                        .FirstOrDefaultAsync(x => x.PlanId == a.PlanId && x.IsActive);
+
+                    if (addonDuration == null)
+                        continue;
+
+                    var addonCustomRate = await _cacontext.SubscriptionSpecialRate
+                        .FirstOrDefaultAsync(x =>
+                            x.CompanyId == dto.CompanyId &&
+                            x.CustomerId == dto.CustomerId &&
+                            x.PlanId == a.PlanId &&
+                            x.IsActive);
+
+                    // ✅ Calculate Addon Amounts
+                    decimal addonAmount = (decimal)((addonCustomRate != null && addonCustomRate.CustomRate > 0)
+                        ? addonCustomRate.CustomRate : addonDuration.Price);
+
+                    decimal? addonDealerAmount = a.CustomAmount ?? addonDuration.DealerPrice;
+
+                    _cacontext.CompanySubscriptionAddon.Add(new CT_CompanySubscriptionAddon
+                    {
+                        MainPlanId = sub.SubId,
+                        PlanId = a.PlanId,
+                        CompanyId = dto.CompanyId,
+                        Amount = addonAmount,
+                        DealerAmount = addonDealerAmount,  // ✅ Store Dealer Amount for addon
+                        UserCount = a.UserCount ?? addonPlan.PlanUsers,
+                        Status = "ACTIVE",
+                        RateType = addonCustomRate != null ? "CUSTOM" : "STANDARD",
+                        CreatedOn = DateTime.Now
+                    });
+                }
+
+                await _cacontext.SaveChangesAsync();
+            }
+
+            await tx.CommitAsync();
+            return sub.SubId;
+        }
+
+        //public async Task<int> CreateCatalogAddonAsync(CompanyCatalogSubscriptionAddonCreateDto dto)
+        //{
+        //    var activeSub = await _cacontext.CompanySubscriptions
+        //        .FirstOrDefaultAsync(x =>
+        //            x.SubId == dto.MainPlanId &&
+        //            x.Status == "ACTIVE");
+
+        //    if (activeSub == null)
+        //        throw new Exception("Invalid subscription");
+
+        //    var plan = await _cacontext.SubscribePlan
+        //        .FirstOrDefaultAsync(x =>
+        //            x.PlanId == dto.PlanId &&
+        //            x.PlanActive);
+
+        //    if (plan == null)
+        //        throw new Exception("Invalid plan");
+
+        //    var duration = await _cacontext.SubscribePlanDuration
+        //        .FirstOrDefaultAsync(x =>
+        //            x.PlanId == dto.PlanId &&
+        //            x.IsActive);
+
+        //    if (duration == null)
+        //        throw new Exception("Invalid duration");
+
+        //    // CUSTOM RATE CHECK
+        //    var customRate = await _cacontext.SubscriptionSpecialRate
+        //        .FirstOrDefaultAsync(x =>
+        //            x.CompanyId == dto.CompanyId &&
+        //            x.CustomerId == activeSub.CustomerId &&
+        //            x.PlanId == dto.PlanId &&
+        //            x.AddonId == null &&
+        //            x.IsActive);
+
+        //    decimal amount = customRate?.CustomRate ?? duration.Price; 
+
+        //    var exists = await _cacontext.CompanySubscriptionAddon
+        //        .AnyAsync(x =>
+        //            x.MainPlanId == dto.MainPlanId &&
+        //            x.PlanId == dto.PlanId &&
+        //            x.Status == "ACTIVE");
+
+        //    if (exists)
+        //        throw new Exception("Addon already exists");
+
+        //    var addon = new CT_CompanySubscriptionAddon
+        //    {
+        //        MainPlanId = dto.MainPlanId,
+        //        PlanId = dto.PlanId,
+        //        CompanyId = dto.CompanyId,
+
+        //        Amount = amount,
+
+        //        UserCount = dto.UserCount,
+        //        Status = "ACTIVE",
+        //        CreatedOn = DateTime.Now
+        //    };
+
+        //    _cacontext.CompanySubscriptionAddon.Add(addon);
+        //    await _cacontext.SaveChangesAsync();
+
+        //    return addon.Id;
+        //}
+
+
+        //    public async Task<int> CreateCatalogAddonAsync(CompanyCatalogSubscriptionAddonCreateDto dto)
+        //    {
+        //        var activeSub = await _cacontext.CompanySubscriptions
+        //            .FirstOrDefaultAsync(x =>
+        //                x.SubId == dto.MainPlanId &&
+        //                x.Status == "ACTIVE");
+
+        //        if (activeSub == null)
+        //            throw new Exception("Invalid subscription");
+
+        //        var plan = await _cacontext.SubscribePlan
+        //            .FirstOrDefaultAsync(x =>
+        //                x.PlanId == dto.PlanId &&
+        //                x.PlanActive);
+
+        //        if (plan == null)
+        //            throw new Exception("Invalid plan");
+
+        //        var duration = await _cacontext.SubscribePlanDuration
+        //            .FirstOrDefaultAsync(x =>
+        //                x.PlanId == dto.PlanId &&
+        //                x.IsActive);
+
+        //        if (duration == null)
+        //            throw new Exception("Invalid duration");
+
+
+        //        // CUSTOM RATE CHECK — use dto.CompanyId directly
+        //        var customRate = await _cacontext.SubscriptionSpecialRate
+        //            .FirstOrDefaultAsync(x =>
+        //                x.CompanyId == dto.CompanyId &&
+        //                x.PlanId == dto.PlanId &&
+        //                x.AddonId == null &&
+        //                x.IsActive);
+
+        //        //decimal amount = customRate?.CustomRate ?? duration.Price;
+        //        decimal amount = (customRate != null && customRate.CustomRate.HasValue && customRate.CustomRate > 0)
+        //? customRate.CustomRate.Value
+        //: duration.Price;
+
+        //        var exists = await _cacontext.CompanySubscriptionAddon
+        //            .AnyAsync(x =>
+        //                x.MainPlanId == dto.MainPlanId &&
+        //                x.PlanId == dto.PlanId &&
+        //                x.Status == "ACTIVE");
+
+        //        if (exists)
+        //            throw new Exception("Addon already exists");
+
+        //        var addon = new CT_CompanySubscriptionAddon
+        //        {
+        //            MainPlanId = dto.MainPlanId,
+        //            PlanId = dto.PlanId,
+        //            CompanyId = dto.CompanyId,
+        //            Amount = amount,
+        //            UserCount = dto.UserCount,
+        //            Status = "ACTIVE",
+        //            CreatedOn = DateTime.Now
+        //        };
+
+        //        _cacontext.CompanySubscriptionAddon.Add(addon);
+        //        await _cacontext.SaveChangesAsync();
+        //        return addon.Id;
+        //    }
+
+        public async Task<int> CreateCatalogAddonAsync(CompanyCatalogSubscriptionAddonCreateDto dto)
+        {
+            var activeSub = await _cacontext.CompanySubscriptions
+                .FirstOrDefaultAsync(x =>
+                    x.SubId == dto.MainPlanId &&
+                    x.Status == "ACTIVE");
+
+            if (activeSub == null)
+                throw new Exception("Invalid subscription");
+
+            var plan = await _cacontext.SubscribePlan
+                .FirstOrDefaultAsync(x =>
+                    x.PlanId == dto.PlanId &&
+                    x.PlanActive);
+
+            if (plan == null)
+                throw new Exception("Invalid plan");
+
+            var duration = await _cacontext.SubscribePlanDuration
+                .FirstOrDefaultAsync(x =>
+                    x.PlanId == dto.PlanId &&
+                    x.IsActive);
+
+            if (duration == null)
+                throw new Exception("Invalid duration");
+
+            // CUSTOM RATE CHECK
+            var customRate = await _cacontext.SubscriptionSpecialRate
+                .FirstOrDefaultAsync(x =>
+                    x.CompanyId == dto.CompanyId &&
+                    x.PlanId == dto.PlanId &&
+                    x.AddonId == null &&
+                    x.IsActive);
+
+            decimal amount = (decimal)((customRate != null && customRate.CustomRate > 0)
+      ? customRate.CustomRate : duration.Price);
+
+            var exists = await _cacontext.CompanySubscriptionAddon
+                .AnyAsync(x =>
+                    x.MainPlanId == dto.MainPlanId &&
+                    x.PlanId == dto.PlanId &&
+                    x.Status == "ACTIVE");
+
+            if (exists)
+                throw new Exception("Addon already exists");
+
+            var addon = new CT_CompanySubscriptionAddon
+            {
+                MainPlanId = dto.MainPlanId,
+                PlanId = dto.PlanId,
+                CompanyId = dto.CompanyId,
+                Amount = amount,
+                UserCount = dto.UserCount,
+                Status = dto.Status ?? "ACTIVE",
+                CreatedOn = DateTime.Now
+            };
+
+            _cacontext.CompanySubscriptionAddon.Add(addon);
+            await _cacontext.SaveChangesAsync();
+            return addon.Id;
+        }
+        public async Task<bool> UpdateCatalogSubscribePlanAsync(int planId, SubscribeCataloguePlanRequestDto request)
+        {
+            var plan = await _cacontext.SubscribePlan
+                .Include(x => x.PlanDurations)
+                .FirstOrDefaultAsync(x => x.PlanId == planId);
+
+            if (plan == null) return false;
+
+            plan.PlanName = request.PlanName;
+            plan.PlanDescription = request.PlanDescription;
+            plan.PlanUsers = request.PlanUsers;
+            plan.PlanIsAddOn = request.PlanIsAddOn;
+            plan.PlanActive = request.PlanActive;
+
+            foreach (var d in plan.PlanDurations)
+                d.IsActive = false;
+
+            var newDurations = request.Durations.Select(d => new CT_SubscribePlanDuration
+            {
+                PlanId = plan.PlanId,
+                DurationDays = d.DurationDays,
+                Price = d.Price,
+                DealerPrice = d.DealerPrice,
+                IsActive = true,
+                CreatedOn = DateTime.Now
+            });
+
+            _cacontext.SubscribePlanDuration.AddRange(newDurations);
+            await _cacontext.SaveChangesAsync();
+
+            return true;
         }
 
         #endregion

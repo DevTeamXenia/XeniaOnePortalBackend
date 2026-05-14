@@ -1,8 +1,10 @@
-﻿namespace XeniaRegistrationBackend.Repositories.PlanModule
+namespace XeniaRegistrationBackend.Repositories.PlanModule
 {
     using Microsoft.EntityFrameworkCore;
+    using Microsoft.IdentityModel.Tokens;
     using XeniaRegistrationBackend.Dtos;
     using XeniaRegistrationBackend.Models;
+    using XeniaRegistrationBackend.Models.Catalog;
     using XeniaRegistrationBackend.Models.Rental;
     using XeniaRegistrationBackend.Models.Temple;
 
@@ -10,11 +12,15 @@
     {
         private readonly TempleDbContext _tecontext;
         private readonly RentalDbContext _recontext;
+        private readonly CatalogDbContext _cacontext;
 
-        public PlanModuleMapRepository(TempleDbContext tecontext, RentalDbContext recontext)
+        public PlanModuleMapRepository(TempleDbContext tecontext, RentalDbContext recontext, CatalogDbContext cacontext)
         {
             _tecontext = tecontext;
-            _recontext = recontext; 
+            _recontext = recontext;
+            _cacontext = cacontext;
+
+
         }
 
         public async Task<List<int>> CreateTemplePlanModuleAsync(List<TK_PlanModuleMap> request)
@@ -56,6 +62,15 @@
             return true;
         }
 
+
+
+
+
+
+
+
+
+
         public async Task<PlanModuleMapResponseDto?> GetTemplePlanModuleByIdAsync(int subPlanId)
         {
             return await (
@@ -94,8 +109,91 @@
         }
 
 
+        #region CATALOG 
+
+        public async Task<List<int>> CreateCatalogPlanModuleAsync(List<CT_PlanModuleMap> request)
+        {
+            var maps = request.Select(x => new CT_PlanModuleMap
+            {
+                PlanId = x.PlanId,
+                ModuleId = x.ModuleId,
+                Active = x.Active
+            }).ToList();
+
+            await _cacontext.PlanModuleMap.AddRangeAsync(maps);
+            await _cacontext.SaveChangesAsync();
+
+            return maps.Select(x => x.SubPlanId).ToList();
+        }
 
 
+        public async Task<bool> UpdateCatalogPlanModuleAsync(List<CT_PlanModuleMap> request)
+        {
+            if (request == null || !request.Any())
+                return false;
+
+            var ids = request.Select(x => x.SubPlanId).ToList();
+
+            var existing = await _cacontext.PlanModuleMap
+                .Where(x => ids.Contains(x.SubPlanId))
+                .ToListAsync();
+
+            foreach (var map in existing)
+            {
+                var updated = request.FirstOrDefault(x => x.SubPlanId == map.SubPlanId);
+                if (updated == null) continue;
+
+                map.PlanId = updated.PlanId;
+                map.ModuleId = updated.ModuleId;
+                map.Active = updated.Active;
+            }
+
+            await _cacontext.SaveChangesAsync();
+            return true;
+        }
+
+
+        public async Task<SubscriptionCatalogPlanResponseDto?> GetCatalogPlanModuleByIdAsync(int id)
+        {
+            return await (
+                from pm in _cacontext.PlanModuleMap
+                join p in _cacontext.SubscribePlan on pm.PlanId equals p.PlanId
+                join m in _cacontext.Modules on pm.ModuleId equals m.ModuleId
+                where pm.SubPlanId == id
+                select new SubscriptionCatalogPlanResponseDto
+                {
+                    SubPlanId = pm.SubPlanId,
+                    PlanId = p.PlanId,
+                    PlanName = p.PlanName,
+                    ModuleId = m.ModuleId,
+                    ModuleName = m.ModuleName,
+                    Active = pm.Active
+                }
+            ).FirstOrDefaultAsync();
+        }
+
+
+        public async Task<List<SubscriptionCatalogPlanResponseDto>> GetCatalogAllAsync()
+        {
+            return await (
+                from pm in _cacontext.PlanModuleMap
+                join p in _cacontext.SubscribePlan on pm.PlanId equals p.PlanId
+                join m in _cacontext.Modules on pm.ModuleId equals m.ModuleId
+                select new SubscriptionCatalogPlanResponseDto
+                {
+                    SubPlanId = pm.SubPlanId,
+                    PlanId = p.PlanId,
+                    PlanName = p.PlanName,
+                    ModuleId = m.ModuleId,
+                    ModuleName = m.ModuleName,
+                    Active = pm.Active
+                }
+            ).ToListAsync();
+        }
+
+        #endregion
+
+        #region Rental
         public async Task<int> CreateRentalPlanModuleAsync(XRS_PlanModuleMap request)
         {
             var map = new XRS_PlanModuleMap
@@ -160,7 +258,9 @@
                 }
             ).ToListAsync();
         }
-
     }
-
 }
+#endregion
+
+
+

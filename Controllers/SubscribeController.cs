@@ -1,7 +1,8 @@
-﻿using Microsoft.AspNetCore.Authorization;
+using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Mvc;
 using XeniaRegistrationBackend.Dtos;
 using XeniaRegistrationBackend.Models;
+using XeniaRegistrationBackend.Models.Catalog;
 using XeniaRegistrationBackend.Models.Temple;
 using XeniaRegistrationBackend.Repositories.Module;
 using XeniaRegistrationBackend.Repositories.PlanModule;
@@ -97,6 +98,99 @@ namespace XeniaRegistrationBackend.Controllers
             if (module == null) return NotFound("Module not found");
 
             return Ok(module);
+        }
+
+
+
+
+        [HttpPost("xeniaOne/module")]
+        public async Task<IActionResult> CreateCatalogModule([FromBody] CT_Module request)
+        {
+            var id = await _moduleRepository.CreateCatalogModuleAsync(request);
+
+            return Ok(new
+            {
+                Message = "Module created successfully",
+                ModuleId = id
+            });
+        }
+
+        [HttpPut("xeniaOne/module/{id}")]
+        public async Task<IActionResult> UpdateCatalogModule(int id, [FromBody] CT_Module request)
+        {
+            var updated = await _moduleRepository.UpdateCatalogModuleAsync(id, request);
+
+            if (!updated)
+                return NotFound("Module not found");
+
+            return Ok(new
+            {
+                Message = "Module updated successfully"
+            });
+        }
+
+        [HttpGet("xeniaOne/module")]
+        public async Task<IActionResult> GetAllCatalogModule()
+        {
+            return Ok(await _moduleRepository.GetAllCatalogModuleAsync());
+        }
+
+        [HttpGet("xeniaOne/module/{id}")]
+        public async Task<IActionResult> GetCatalogModuleById(int id)
+        {
+            var module = await _moduleRepository.GetByIdCatalogModuleAsync(id);
+            if (module == null) return NotFound("Module not found");
+
+            return Ok(module);
+        }
+
+        [HttpPost("xeniaOne/planModuleMap")]
+        public async Task<IActionResult> CreateCatalogPlanModule([FromBody] List<CT_PlanModuleMap> request)
+        {
+            var ids = await _planModuleMapRepository.CreateCatalogPlanModuleAsync(request);
+
+            return Ok(new
+            {
+                Message = "Modules mapped to plan successfully",
+                SubPlanIds = ids
+            });
+        }
+
+
+        [HttpPut("xeniaOne/planModuleMap/{id}")]
+        public async Task<IActionResult> UpdateCatalogPlanModule(int id, [FromBody] List<CT_PlanModuleMap> request)
+        {
+            var updated = await _planModuleMapRepository.UpdateCatalogPlanModuleAsync(request);
+
+            if (!updated)
+                return NotFound("Mapping not found");
+
+            return Ok(new
+            {
+                Message = "Mapping updated successfully"
+            });
+        }
+
+
+   
+
+        [HttpGet("xeniaOne/planModuleMap")]
+        public async Task<IActionResult> GetAllCatalogPlanModules()
+        {
+            var list = await _planModuleMapRepository.GetCatalogAllAsync();
+            return Ok(list);
+        }
+
+
+        [HttpGet("xeniaOne/planModuleMap/{id}")]
+        public async Task<IActionResult> GetCatalogPlanModuleById(int id)
+        {
+            var data = await _planModuleMapRepository.GetCatalogPlanModuleByIdAsync(id);
+
+            if (data == null)
+                return NotFound("Mapping not found");
+
+            return Ok(data);
         }
 
 
@@ -424,14 +518,108 @@ public async Task<IActionResult> CreateRentalAddon([FromBody] CompanyRentalSubsc
         public async Task<IActionResult> CreateTicketSubscription([FromBody] CompanyTicketSubscriptionCreateDto dto)
         {
             var subId = await _subscribePlanRepository.CreateTicketSubscriptionAsync(dto);
-
-            return Ok(new
-            {
-                status = "success",
-                subscriptionId = subId
-            });
+            return Ok(new { status = "success", subscriptionId = subId });
         }
 
+
+        #endregion
+
+        #region XENIAOne
+
+        [HttpPost("xeniaOne/plan")]
+        public async Task<IActionResult> CreateCatalogSubscribePlan([FromBody] SubscribeCataloguePlanRequestDto request)
+        {
+            var id = await _subscribePlanRepository.CreateCatalogSubscribePlanAsync(request);
+            return Ok(new { Message = "Plan created successfully", PlanId = id });
+        }
+
+        [HttpPut("xeniaOne/plan/{id}")]
+        public async Task<IActionResult> UpdateCatalogSubscribePlan(int id, [FromBody] SubscribeCataloguePlanRequestDto request)
+        {
+            var updated = await _subscribePlanRepository.UpdateCatalogSubscribePlanAsync(id, request);
+            if (!updated) return NotFound("Plan not found");
+            return Ok(new { Message = "Plan updated successfully" });
+        }
+
+        [HttpGet("xeniaOne/plan")]
+        public async Task<IActionResult> GetAllCatalogSubscriptionPlan()
+        {
+            return Ok(await _subscribePlanRepository.GetAllCatalogSubscriptionPlanAsync());
+        }
+
+        [HttpGet("xeniaOne/plan/{id}")]
+        public async Task<IActionResult> GetCatalogSubscriptionPlanById(int id)
+        {
+            var plan = await _subscribePlanRepository.GetSubscriptionCatalogPlanByIdAsync(id);
+            if (plan == null) return NotFound("Plan not found");
+            return Ok(plan);
+        }
+
+        [HttpPost("xeniaOne/renew")]
+        public async Task<IActionResult> CreateCatalogSubscription(
+     [FromBody] CompanyCatalogSubscriptionCreateDto dto)
+        {
+            try
+            {
+                var subId = await _subscribePlanRepository
+                    .CreateCatalogSubscriptionAsync(dto);
+
+                return Ok(new
+                {
+                    status = "success",
+                    message = "Subscription created successfully",
+                    subscriptionId = subId
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    status = "error",
+                    message = ex.Message
+                });
+            }
+        }
+
+        [HttpPost("xeniaOne/addon")]
+        public async Task<IActionResult> CreateCatalogAddon(
+      [FromBody] CompanyCatalogSubscriptionAddonCreateDto dto)
+        {
+            try
+            {
+                var addonId = await _subscribePlanRepository.CreateCatalogAddonAsync(dto);
+
+                return Ok(new
+                {
+                    status = "success",
+                    addonId = addonId
+                });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new
+                {
+                    status = "error",
+                    message = ex.Message
+                });
+            }
+        }
+
+        [HttpGet("xeniaOne/summary/{companyId}")]
+        public async Task<IActionResult> GetCatalogSubscriptionSummary(int companyId)
+        {
+            var summary = await _subscribePlanRepository.GetCatalogSubscriptionSummaryAsync(companyId);
+            if (summary == null) return NotFound("No subscription found");
+            return Ok(summary);
+        }
+
+        //[HttpGet("catalog/special-rate/company/{companyId}")]
+        //public async Task<IActionResult> GetCatalogSpecialRatesByCompany(int companyId)
+        //{
+        //    var rates = await _subscribePlanRepository
+        //        .GetCatalogSpecialRatesByCompanyAsync(companyId);
+        //    return Ok(rates);
+        //}
 
         #endregion
 

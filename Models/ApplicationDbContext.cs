@@ -1,4 +1,4 @@
-﻿
+
 using Microsoft.EntityFrameworkCore;
 using XeniaRegistrationBackend.Models.Temple;
 

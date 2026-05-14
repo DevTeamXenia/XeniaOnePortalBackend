@@ -1,4 +1,5 @@
 ﻿using XeniaRegistrationBackend.Dtos;
+using XeniaRegistrationBackend.Models.Catalog;
 
 namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
 {
@@ -58,7 +59,19 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
         Task<int> CreateTicketSubscriptionAsync(CompanyTicketSubscriptionCreateDto dto);
 
         #endregion
-
-
+        #region CATALOG
+        Task<int> CreateCatalogSubscribePlanAsync(SubscribeCataloguePlanRequestDto request);
+        Task<bool> UpdateCatalogSubscribePlanAsync(int planId, SubscribeCataloguePlanRequestDto request);
+        Task<bool> CreateCatalogSubscribeUpdateAsync(int planId, SubscribeCataloguePlanRequestDto request);
+        Task<IEnumerable<SubscribeCatalogPlanResponseDto>> GetAllCatalogSubscriptionPlanAsync();
+        Task<SubscribeCatalogPlanResponseDto?> GetSubscriptionCatalogPlanByIdAsync(int planId);
+        Task<int> CreateCatalogSubscriptionAsync(CompanyCatalogSubscriptionCreateDto dto);
+        Task<int> CreateCatalogAddonAsync(CompanyCatalogSubscriptionAddonCreateDto dto);
+        Task<SubscriptionCatalogueSummaryDto?> GetCatalogSubscriptionSummaryAsync(int companyId);
+        //Task<int> CreateCatalogSpecialRateAsync(CatalogSpecialRateCreateDto dto);
+        //Task<bool> UpdateCatalogSpecialRateAsync(int id, CatalogSpecialRateCreateDto dto);
+        //Task<IEnumerable<CatalogSpecialRateResponseDto>> GetCatalogSpecialRatesByCompanyAsync(int companyId);
+        //Task<CatalogSpecialRateResponseDto?> GetCatalogSpecialRateByIdAsync(int id);
+        #endregion
     }
 }

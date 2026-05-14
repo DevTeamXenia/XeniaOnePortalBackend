@@ -1,4 +1,4 @@
-﻿using System.ComponentModel.DataAnnotations;
+using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
 using XeniaRegistrationBackend.Models.Ticket;
 
@@ -18,11 +18,7 @@ namespace XeniaRegistrationBackend.Models
         public string? PlanDescription { get; set; }
 
         [Required]
-        public decimal PlanPrice { get; set; }
         public bool PlanIsAddOn { get; set; }
-
-        [Required]
-        public int PlanDurationDays { get; set; }
 
         [Required]
         public int PlanUsers { get; set; }
