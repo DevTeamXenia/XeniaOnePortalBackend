@@ -1,4 +1,4 @@
-﻿using XeniaRegistrationBackend.Dtos;
+using XeniaRegistrationBackend.Dtos;
 
 namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 {

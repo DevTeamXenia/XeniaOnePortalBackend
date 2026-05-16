@@ -1,4 +1,4 @@
-﻿namespace XeniaRegistrationBackend.Repositories.Project
+namespace XeniaRegistrationBackend.Repositories.Project
 {
     using Microsoft.EntityFrameworkCore;
     using XeniaRegistrationBackend.Dtos;

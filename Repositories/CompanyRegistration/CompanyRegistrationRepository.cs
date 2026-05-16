@@ -1,4 +1,4 @@
-﻿
+
 
 using Microsoft.EntityFrameworkCore;
 using XeniaRegistrationBackend.Dtos;
@@ -1784,10 +1784,30 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                 {
                     CompanyName = request.CompanyName,
                     AddressLine1 = request.CompanyAddress,
+                    AddressLine2 = request.AddressLine2,
                     Phoneno1 = request.Phone1,
                     Phoneno2 = request.Phone2,
-                    TaxRegNo = request.RegNo,
+                    Latitude = request.Latitude,
+                    Longitude = request.Longitude,
                     Email = request.Email,
+                    Pincode = request.Pincode,
+                    Website = request.Website,
+                    DecimalValue = request.DecimalValue,
+                    TaxType = request.TaxType,
+                    Currency = request.Currency,
+                    CurrencySymbol = request.CurrencySymbol,
+                    MajorCurrency = request.MajorCurrency,
+                    MinorCurrency = request.MinorCurrency,
+                    OrderNoPrefix = request.OrderNoPrefix,
+                    OrderNoSuffix = request.OrderNoSuffix,
+                    BranchLimit = request.BranchLimit,
+                    CompanyBrand = request.CompanyBrand,
+                    CustomerCareNo = request.CustomerCareNo,
+                    CustomerCareEmail = request.CustomerCareEmail,
+                    FooterMessage = request.FooterMessage,
+                    Logo = request.Logo,
+                    TaxRegNo = request.RegNo,
+                    SoldBy = request.SoldBy,
                     Active = true,
                     CreatedDate = DateTime.Now,
                     ValidityDate = DateTime.Today.AddDays(14)
@@ -1928,6 +1948,27 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     CompanyRegNo = c.TaxRegNo,          // ✅ TaxRegNo
                     CompanyActive = c.Active,           // ✅ Active
                     CompanyCreatedOn = c.CreatedDate,   // ✅ CreatedDate
+                    CompanyLogo = c.Logo,
+                    AddressLine2 = c.AddressLine2,
+                    Email = c.Email,
+                    Latitude = c.Latitude,
+                    Longitude = c.Longitude,
+                    Pincode = c.Pincode,
+                    Website = c.Website,
+                    DecimalValue = c.DecimalValue,
+                    TaxType = c.TaxType,
+                    Currency = c.Currency,
+                    CurrencySymbol = c.CurrencySymbol,
+                    MajorCurrency = c.MajorCurrency,
+                    MinorCurrency = c.MinorCurrency,
+                    OrderNoPrefix = c.OrderNoPrefix,
+                    OrderNoSuffix = c.OrderNoSuffix,
+                    BranchLimit = c.BranchLimit,
+                    CompanyBrand = c.CompanyBrand,
+                    CustomerCareNo = c.CustomerCareNo,
+                    CustomerCareEmail = c.CustomerCareEmail,
+                    FooterMessage = c.FooterMessage,
+                    SoldBy = c.SoldBy,
                     Subscription = subDto
                 });
             }
@@ -2004,12 +2045,33 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                 {
                     CompanyId = company.CompanyId,
                     CompanyName = company.CompanyName,
-                    CompanyAddress = company.AddressLine1,   // ✅ AddressLine1
-                    CompanyPhone1 = company.Phoneno1,        // ✅ Phoneno1
-                    CompanyPhone2 = company.Phoneno2,        // ✅ Phoneno2
-                    CompanyRegNo = company.TaxRegNo,         // ✅ TaxRegNo
-                    CompanyActive = company.Active,          // ✅ Active
-                    CompanyCreatedOn = company.CreatedDate,  // ✅ CreatedDate
+                    CompanyAddress = company.AddressLine1,
+                    CompanyPhone1 = company.Phoneno1,
+                    CompanyPhone2 = company.Phoneno2,
+                    CompanyRegNo = company.TaxRegNo,
+                    CompanyActive = company.Active,
+                    CompanyCreatedOn = company.CreatedDate,
+                    CompanyLogo = company.Logo,
+                    AddressLine2 = company.AddressLine2,
+                    Email = company.Email,
+                    Latitude = company.Latitude,
+                    Longitude = company.Longitude,
+                    Pincode = company.Pincode,
+                    Website = company.Website,
+                    DecimalValue = company.DecimalValue,
+                    TaxType = company.TaxType,
+                    Currency = company.Currency,
+                    CurrencySymbol = company.CurrencySymbol,
+                    MajorCurrency = company.MajorCurrency,
+                    MinorCurrency = company.MinorCurrency,
+                    OrderNoPrefix = company.OrderNoPrefix,
+                    OrderNoSuffix = company.OrderNoSuffix,
+                    BranchLimit = company.BranchLimit,
+                    CompanyBrand = company.CompanyBrand,
+                    CustomerCareNo = company.CustomerCareNo,
+                    CustomerCareEmail = company.CustomerCareEmail,
+                    FooterMessage = company.FooterMessage,
+                    SoldBy = company.SoldBy,
                     Subscription = subDto
                 },
                 // ✅ Use tblCompanySettings
@@ -2034,9 +2096,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     .ToListAsync()
             };
         }
-
         #endregion
-
 
 
 

@@ -38,5 +38,6 @@ namespace XeniaRegistrationBackend.Models.Catalog
         public string? SoldBy { get; set; }
         public string? CurrencySymbol { get; set; }
         public DateTime? CreatedDate { get; set; }
+      
     }
 }
