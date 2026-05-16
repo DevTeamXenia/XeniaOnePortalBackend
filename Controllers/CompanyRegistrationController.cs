@@ -226,6 +226,19 @@ namespace XeniaRegistrationBackend.Controllers
                 Message = "Catalog company registered successfully"
             });
         }
+        [HttpPut("XeniaOne/update")]
+        public async Task<IActionResult> UpdateCatalogCompany([FromBody] UpdateCatalogCompanyDto dto)
+        {
+            try
+            {
+                await _repositoryCompanyRegistration.UpdateCatalogCompanyAsync(dto);
+                return Ok(new { status = "updated", message = "Catalog company updated successfully" });
+            }
+            catch (Exception ex)
+            {
+                return BadRequest(new { status = "error", message = ex.Message });
+            }
+        }
 
         #endregion
     }

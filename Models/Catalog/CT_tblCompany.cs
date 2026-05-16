@@ -34,7 +34,7 @@ namespace XeniaRegistrationBackend.Models.Catalog
         public string? CustomerCareNo { get; set; }
         public string? CustomerCareEmail { get; set; }
         public string? TaxType { get; set; }
-        public bool? Barcode { get; set; }
+        //public bool? Barcode { get; set; }
         public string? SoldBy { get; set; }
         public string? CurrencySymbol { get; set; }
         public DateTime? CreatedDate { get; set; }

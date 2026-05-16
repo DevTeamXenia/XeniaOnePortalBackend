@@ -1976,6 +1976,92 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
             return result;
         }
 
+
+        public async Task UpdateCatalogCompanyAsync(UpdateCatalogCompanyDto dto)
+        {
+            using var transaction = await _cacontext.Database.BeginTransactionAsync();
+            try
+            {
+                var company = await _cacontext.tblCompany
+                    .FirstOrDefaultAsync(c => c.CompanyId == dto.CompanyId);
+
+                if (company == null) throw new Exception("Company not found");
+
+                // Update company fields
+                company.CompanyName = dto.CompanyName;
+                company.AddressLine1 = dto.CompanyAddress;
+                company.AddressLine2 = dto.AddressLine2;
+                company.Phoneno1 = dto.Phone1;
+                company.Phoneno2 = dto.Phone2;
+                company.Email = dto.Email;
+                company.TaxRegNo = dto.RegNo;
+                company.Pincode = dto.Pincode;
+                company.Website = dto.Website;
+                company.Logo = dto.Logo;
+                company.TaxType = dto.TaxType;
+                company.Currency = dto.Currency;
+                company.CurrencySymbol = dto.CurrencySymbol;
+                company.MajorCurrency = dto.MajorCurrency;
+                company.MinorCurrency = dto.MinorCurrency;
+                company.OrderNoPrefix = dto.OrderNoPrefix;
+                company.OrderNoSuffix = dto.OrderNoSuffix;
+                company.BranchLimit = dto.BranchLimit?.ToString();
+                company.CompanyBrand = dto.CompanyBrand;
+                company.CustomerCareNo = dto.CustomerCareNo;
+                company.CustomerCareEmail = dto.CustomerCareEmail;
+                company.FooterMessage = dto.FooterMessage;
+                company.SoldBy = dto.SoldBy;
+                company.Latitude = dto.Latitude?.ToString();
+                company.Longitude = dto.Longitude?.ToString();
+                company.DecimalValue = dto.DecimalValue;
+                if (dto.CompanyActive.HasValue)
+                    company.Active = dto.CompanyActive.Value;
+
+                // Update settings - remove old, add new
+                _cacontext.tblCompanySettings.RemoveRange(
+                    _cacontext.tblCompanySettings.Where(s => s.CompanyId == dto.CompanyId));
+
+                await _cacontext.SaveChangesAsync();
+
+                if (dto.Settings != null)
+                {
+                    _cacontext.tblCompanySettings.AddRange(dto.Settings.Select(s => new CT_tblCompanySettings
+                    {
+                        CompanyId = dto.CompanyId,
+                        KeyCode = s.KeyCode,
+                        Value = s.Value,
+                        Active = true
+                    }));
+                }
+
+                // Update labels - remove old, add new
+                _cacontext.CompanyLabel.RemoveRange(
+                    _cacontext.CompanyLabel.Where(l => l.CompanyId == dto.CompanyId));
+
+                await _cacontext.SaveChangesAsync();
+
+                if (dto.Labels != null)
+                {
+                    _cacontext.CompanyLabel.AddRange(dto.Labels.Select(l => new CT_CompanyLabel
+                    {
+                        CompanyId = dto.CompanyId,
+                        SettingKey = l.SettingKey,
+                        DisplayName = l.DisplayName,
+                        DisplayNameTa = l.DisplayNameTa,
+                        DisplayNameMa = l.DisplayNameMa,
+                        CreatedBy = 0
+                    }));
+                }
+
+                await _cacontext.SaveChangesAsync();
+                await transaction.CommitAsync();
+            }
+            catch
+            {
+                await transaction.RollbackAsync();
+                throw;
+            }
+        }
         public async Task<CompanyCatalogDetailDto?> GetCatalogCompanyByIdAsync(int companyId)
         {
             // ✅ Use tblCompany instead of Company
