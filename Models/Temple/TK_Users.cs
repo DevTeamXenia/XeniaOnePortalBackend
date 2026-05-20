@@ -7,34 +7,31 @@ namespace XeniaRegistrationBackend.Models.Temple
     public class TK_Users
     {
         [Key]
-        [Column("userId")]  // ? Map to database column
+        [Column("userId")]  
         public int UserId { get; set; }
 
-        [Column("companyId")]  // ? Map to database column
+        [Column("companyId")] 
         public int CompanyId { get; set; }
 
         [Required, MaxLength(100)]
-        [Column("userName")]  // ? Map to database column
+        [Column("userName")]  
         public string UserName { get; set; } = null!;
 
         [Required, MaxLength(50)]
-        [Column("password")]  // ? Map to database column
+        [Column("password")]  
         public string Password { get; set; } = null!;
 
         [MaxLength(50)]
-        [Column("userType")]  // ? Map to database column
+        [Column("userType")] 
         public string? UserType { get; set; }
 
-        [Column("userToken")]  // ? Map to database column
-        public string? UserToken { get; set; }
-
-        [Column("userCreatedOn")]  // ? Map to database column
+        [Column("userCreatedOn")]  
         public DateTime? UserCreatedOn { get; set; }
 
-        [Column("userCreatedBy")]  // ? Map to database column
+        [Column("userCreatedBy")]  
         public int? UserCreatedBy { get; set; }
 
-        [Column("userStatus")]  // ? Map to database column
+        [Column("userStatus")]  
         public bool? UserStatus { get; set; }
     }
 }

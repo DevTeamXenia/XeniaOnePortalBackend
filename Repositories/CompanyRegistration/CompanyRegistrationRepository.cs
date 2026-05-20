@@ -65,7 +65,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                         CompanyId = company.CompanyId,
                         UserName = request.UserName,
                         Password = request.Password,
-                        UserType = "ADMIN",
+                        UserType = "Administrator",
                         UserCreatedOn = DateTime.Now,
                         UserCreatedBy = 0,
                         UserStatus = true
