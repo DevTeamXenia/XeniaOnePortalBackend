@@ -278,10 +278,15 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
         public async Task UpdateTempleCompanyAsync(UpdateTempleCompanyDto dto)
         {
             using var transaction = await _tecontext.Database.BeginTransactionAsync();
+
             try
             {
-                var company = await _tecontext.Company.FirstOrDefaultAsync(c => c.CompanyId == dto.CompanyId);
-                if (company == null) throw new Exception("Company not found");
+                var company = await _tecontext.Company
+                    .FirstOrDefaultAsync(c => c.CompanyId == dto.CompanyId);
+
+                if (company == null)
+                    throw new Exception("Company not found");
+
 
                 company.CompanyName = dto.CompanyName;
                 company.CompanyAddress = dto.Address;
@@ -293,35 +298,87 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                 company.StateName = dto.State;
                 company.IFSCCode = dto.IFSCCode;
 
-                _tecontext.CompanySetting.RemoveRange(
-                    _tecontext.CompanySetting.Where(s => s.CompanyId == dto.CompanyId));
-                _tecontext.CompanyLabel.RemoveRange(
-                    _tecontext.CompanyLabel.Where(l => l.CompanyId == dto.CompanyId));
+      
+
+                if (dto.Settings != null && dto.Settings.Any())
+                {
+                    var existingSettings = await _tecontext.CompanySetting
+                        .Where(s => s.CompanyId == dto.CompanyId)
+                        .ToListAsync();
+
+                    foreach (var setting in dto.Settings)
+                    {
+                        var existing = existingSettings
+                        .FirstOrDefault(x =>
+                        x.KeyCode.Trim().ToUpper() ==
+                           setting.KeyCode.Trim().ToUpper());
+
+                        if (existing != null)
+                        {
+                    
+                            existing.Value = setting.Value;
+                        }
+                        else
+                        {
+                   
+                            _tecontext.CompanySetting.Add(new TK_CompanySettings
+                            {
+                                CompanyId = dto.CompanyId,
+                                KeyCode = setting.KeyCode,
+                                Value = setting.Value,
+                                Active = true
+                            });
+                        }
+                    }
+                }
+
+               
+
+                if (dto.Labels != null && dto.Labels.Any())
+                {
+                    var existingLabels = await _tecontext.CompanyLabel
+                        .Where(l => l.CompanyId == dto.CompanyId)
+                        .ToListAsync();
+
+                    foreach (var label in dto.Labels)
+                    {
+                         var existing = existingLabels
+                         .FirstOrDefault(x =>
+                            x.SettingKey.Trim().ToUpper() ==
+                           label.SettingKey.Trim().ToUpper());
+
+                        if (existing != null)
+                        {
+                          
+                            existing.DisplayName = label.DisplayName;
+                            existing.DisplayNameTa = label.DisplayNameTa;
+                            existing.DisplayNameMa = label.DisplayNameMa;
+                        }
+                        else
+                        {
+                            
+                            _tecontext.CompanyLabel.Add(new TK_CompanyLabel
+                            {
+                                CompanyId = dto.CompanyId,
+                                SettingKey = label.SettingKey,
+                                DisplayName = label.DisplayName,
+                                DisplayNameTa = label.DisplayNameTa,
+                                DisplayNameMa = label.DisplayNameMa
+                            });
+                        }
+                    }
+                }
+
+                
 
                 await _tecontext.SaveChangesAsync();
 
-                _tecontext.CompanySetting.AddRange(dto.Settings.Select(s => new TK_CompanySettings
-                {
-                    CompanyId = dto.CompanyId,
-                    KeyCode = s.KeyCode,
-                    Value = s.Value
-                }));
-                _tecontext.CompanyLabel.AddRange(dto.Labels.Select(l => new TK_CompanyLabel
-                {
-                    CompanyId = dto.CompanyId,
-                    SettingKey = l.SettingKey,
-                    DisplayName = l.DisplayName,
-                    DisplayNameTa = l.DisplayNameTa,
-                    DisplayNameMa = l.DisplayNameMa
-                }));
-
-                await _tecontext.SaveChangesAsync();
                 await transaction.CommitAsync();
             }
-            catch
+            catch (Exception ex)
             {
                 await transaction.RollbackAsync();
-                throw;
+                throw new Exception(ex.Message);
             }
         }
 
