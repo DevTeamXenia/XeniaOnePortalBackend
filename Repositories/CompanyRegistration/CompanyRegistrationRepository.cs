@@ -149,18 +149,17 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                         .Where(p => p.PlanId == latestSub.PlanId)
                         .Select(p => p.PlanName)
                         .FirstOrDefaultAsync();
-
                     var addons = await (
                         from a in _tecontext.CompanySubscriptionAddon
                         join p in _tecontext.SubscribePlan on a.PlanId equals p.PlanId
-                        where a.CompanyId == c.CompanyId
-                              && a.MainPlanId == latestSub.PlanId
+                        where a.CompanyId == c.CompanyId && a.MainPlanId == latestSub.SubId
                               && a.Status == "ACTIVE"
                         select new SubscriptionTempleAddonDto
                         {
+
                             SubAddonId = a.SubAddonId,
                             SubAddonName = p.PlanName,
-                            Amount = a.Amount,
+                            Amount = p.PlanPrice ?? 0,
                             UserCount = a.UserCount
                         }
                     ).ToListAsync();

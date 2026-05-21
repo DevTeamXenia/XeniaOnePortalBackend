@@ -10,28 +10,26 @@ namespace XeniaRegistrationBackend.Models.Catalog
         [Key]
         public int Id { get; set; }
 
-        public int? MainPlanId { get; set; }    // FK to tblCompanySubscription.SubId
+        public int? MainPlanId { get; set; }    
 
-        public int? PlanId { get; set; }        // Addon plan
+        public int? PlanId { get; set; }      
 
         public int? CompanyId { get; set; }
 
         [Column(TypeName = "decimal(18,2)")]
-        public decimal? Amount { get; set; }        // Actual amount charged
+        public decimal? Amount { get; set; }       
 
         [Column(TypeName = "decimal(18,2)")]
-        public decimal? DealerAmount { get; set; }  // Dealer rate
+        public decimal? DealerAmount { get; set; }  
 
-        //[Column(TypeName = "decimal(18,2)")]
-        //public decimal? CustomAmount { get; set; }  // Custom rate
 
         [MaxLength(50)]
-        public string? RateType { get; set; }       // STANDARD / DEALER / CUSTOM
+        public string? RateType { get; set; }       
 
         public int? UserCount { get; set; }
 
         [MaxLength(50)]
-        public string? Status { get; set; } = "ACTIVE";  // ACTIVE / EXPIRED
+        public string? Status { get; set; } = "ACTIVE"; 
 
         public DateTime? CreatedOn { get; set; } = DateTime.Now;
     }

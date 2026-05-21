@@ -18,7 +18,7 @@ namespace XeniaRegistrationBackend.Models.Temple
         public string? PlanDescription { get; set; }
 
         public int PlanUsers { get; set; }
-
+        public decimal? PlanPrice { get; set; }
         public bool PlanIsAddOn { get; set; }
         public int? PlanCreatedBy { get; set; }
 
