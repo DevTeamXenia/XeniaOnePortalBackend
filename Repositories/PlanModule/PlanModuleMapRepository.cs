@@ -25,49 +25,40 @@ namespace XeniaRegistrationBackend.Repositories.PlanModule
 
         public async Task<List<int>> CreateTemplePlanModuleAsync(List<TK_PlanModuleMap> request)
         {
-            var maps = request.Select(x => new TK_PlanModuleMap
+            var ids = new List<int>();
+
+            if (request == null || !request.Any())
+                return ids;
+
+            // Get all PlanIds from request
+            var planIds = request.Select(x => x.PlanId).Distinct().ToList();
+
+            // Remove all existing records for those PlanIds
+            var existingRecords = await _tecontext.PlanModuleMap
+                .Where(x => planIds.Contains(x.PlanId))
+                .ToListAsync();
+
+            if (existingRecords.Any())
+            {
+                _tecontext.PlanModuleMap.RemoveRange(existingRecords);
+                await _tecontext.SaveChangesAsync();
+            }
+
+            // Insert new records
+            var newRecords = request.Select(x => new TK_PlanModuleMap
             {
                 PlanId = x.PlanId,
                 ModuleId = x.ModuleId,
                 Active = x.Active
             }).ToList();
 
-            await _tecontext.PlanModuleMap.AddRangeAsync(maps);
+            await _tecontext.PlanModuleMap.AddRangeAsync(newRecords);
             await _tecontext.SaveChangesAsync();
 
-            return maps.Select(x => x.SubPlanId).ToList();
+            ids = newRecords.Select(x => x.SubPlanId).ToList();
+
+            return ids;
         }
-
-        public async Task<bool> UpdateTemplePlanModuleAsync(List<TK_PlanModuleMap> request)
-        {
-            if (request == null || !request.Any())
-                return false;
-
-            var ids = request.Select(x => x.SubPlanId).ToList();
-
-            var existingMaps = await _tecontext.PlanModuleMap
-                .Where(x => ids.Contains(x.SubPlanId))
-                .ToListAsync();
-
-            foreach (var map in existingMaps)
-            {
-                var updated = request.First(x => x.SubPlanId == map.SubPlanId);
-
-                map.PlanId = updated.PlanId;
-                map.ModuleId = updated.ModuleId;
-                map.Active = updated.Active;
-            }
-
-            await _tecontext.SaveChangesAsync();
-            return true;
-        }
-
-
-
-
-
-
-
 
 
 
@@ -194,33 +185,54 @@ namespace XeniaRegistrationBackend.Repositories.PlanModule
         #endregion
 
         #region Rental
-        public async Task<int> CreateRentalPlanModuleAsync(XRS_PlanModuleMap request)
+        public async Task<List<int>> CreateRentalPlanModuleAsync(List<XRS_PlanModuleMap> request)
         {
-            var map = new XRS_PlanModuleMap
+            var ids = new List<int>();
+
+            if (request == null || !request.Any())
+                return ids;
+
+            var planIds = request.Select(x => x.PlanId).Distinct().ToList();
+
+            // REMOVE existing mappings for these plans
+            var existing = await _recontext.PlanModuleMap
+                .Where(x => planIds.Contains(x.PlanId))
+                .ToListAsync();
+
+            if (existing.Any())
             {
-                PlanId = request.PlanId,
-                ModuleId = request.ModuleId,
-                Active = request.Active
-            };
+                _recontext.PlanModuleMap.RemoveRange(existing);
+                await _recontext.SaveChangesAsync();
+            }
 
-            _recontext.PlanModuleMap.Add(map);
+            // REINSERT new mappings
+            var newRecords = request.Select(x => new XRS_PlanModuleMap
+            {
+                PlanId = x.PlanId,
+                ModuleId = x.ModuleId,
+                Active = x.Active
+            }).ToList();
+
+            await _recontext.PlanModuleMap.AddRangeAsync(newRecords);
             await _recontext.SaveChangesAsync();
 
-            return map.SubPlanId;
+            ids = newRecords.Select(x => x.SubPlanId).ToList();
+
+            return ids;
         }
 
-        public async Task<bool> UpdateRentalPlanModuleAsync(int subPlanId, XRS_PlanModuleMap request)
-        {
-            var map = await _recontext.PlanModuleMap.FindAsync(subPlanId);
-            if (map == null) return false;
+        //public async Task<bool> UpdateRentalPlanModuleAsync(int subPlanId, XRS_PlanModuleMap request)
+        //{
+        //    var map = await _recontext.PlanModuleMap.FindAsync(subPlanId);
+        //    if (map == null) return false;
 
-            map.PlanId = request.PlanId;
-            map.ModuleId = request.ModuleId;
-            map.Active = request.Active;
+        //    map.PlanId = request.PlanId;
+        //    map.ModuleId = request.ModuleId;
+        //    map.Active = request.Active;
 
-            await _recontext.SaveChangesAsync();
-            return true;
-        }
+        //    await _recontext.SaveChangesAsync();
+        //    return true;
+        //}
 
         public async Task<PlanModuleMapResponseDto?> GetRentalPlanModuleByIdAsync(int subPlanId)
         {

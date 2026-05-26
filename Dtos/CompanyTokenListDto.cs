@@ -4,7 +4,7 @@ namespace XeniaRegistrationBackend.Dtos
 {
     public class CompanyTokenListDto
     {
-        public int CompanyId { get; set; }
+        public int companyId { get; set; }
         public string CompanyName { get; set; } = null!;
 
         public bool? Status { get; set; }
@@ -14,8 +14,6 @@ namespace XeniaRegistrationBackend.Dtos
         public string? Address { get; set; }
 
         public string? Email { get; set; }
-        //public string? UserName { get; set; }
-        //public string? Password { get; set; }
         public SubscriptionTokenSummaryDto? Subscription { get; set; }
     }
 }

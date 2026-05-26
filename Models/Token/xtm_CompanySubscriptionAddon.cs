@@ -9,21 +9,26 @@
         public class xtm_CompanySubscriptionAddon
         {
             [Key]
+            [Column("subAddonId")]
             public int SubAddonId { get; set; }
 
-            public int MainPlanId { get; set; }
-
+            [Column("planId")]
             public int PlanId { get; set; }
 
+            [Column("mainPlanId")]
+            public int MainPlanId { get; set; }
+
+            [Column("companyId")]
             public int CompanyId { get; set; }
 
-            [Column(TypeName = "decimal(18,2)")]
+            [Column("amount")]
             public decimal Amount { get; set; }
 
+            [Column("depCount")]
             public int DepCount { get; set; }
 
-            [MaxLength(50)]
-            public string? Status { get; set; }
+            [Column("status")]
+            public string Status { get; set; }
         }
     }
 

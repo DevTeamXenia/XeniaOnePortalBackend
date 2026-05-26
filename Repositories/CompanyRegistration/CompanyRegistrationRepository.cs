@@ -1,5 +1,4 @@
 
-
 using Microsoft.EntityFrameworkCore;
 using XeniaRegistrationBackend.Dtos;
 using XeniaRegistrationBackend.Models;
@@ -454,6 +453,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
             }
         }
 
+       
         public async Task<List<CompanyTokenListDto>> GetAllTokenCompaniesAsync()
         {
             var companies = await _tocontext.Company.ToListAsync();
@@ -470,24 +470,43 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
                 if (latestSub != null)
                 {
-                    var plan = await (
-                        from p in _tecontext.SubscribePlan
-                        where p.PlanId == latestSub.PlanId
-                        select new { p.PlanName }
-                    ).FirstOrDefaultAsync();
+                   
+                    var plan = await _tecontext.SubscribePlan
+                        .Where(p => p.PlanId == latestSub.PlanId)
+                        .Select(p => new
+                        {
+                            p.PlanName
+                        })
+                        .FirstOrDefaultAsync();
 
-                    var addons = await (
-                        from a in _tecontext.CompanySubscriptionAddon
-                        join p in _tecontext.SubscribePlan on a.PlanId equals p.PlanId
-                        where a.CompanyId == c.CompanyID && a.MainPlanId == latestSub.SubId
-                        select new SubscriptionTokenAddonDto
+                    
+                    var addonData = await _tocontext.CompanySubscriptionAddon
+                        .Where(a =>
+                            a.CompanyId == c.CompanyID &&
+                            a.MainPlanId == latestSub.PlanId &&
+                            a.Status == "ACTIVE")
+                        .ToListAsync();
+
+                    var addons = new List<SubscriptionTokenAddonDto>();
+
+                    foreach (var a in addonData)
+                    {
+                        var addonPlan = await _tecontext.SubscribePlan
+                            .Where(p => p.PlanId == a.PlanId)
+                            .Select(p => new
+                            {
+                                p.PlanName
+                            })
+                            .FirstOrDefaultAsync();
+
+                        addons.Add(new SubscriptionTokenAddonDto
                         {
                             SubAddonId = a.SubAddonId,
-                            SubAddonName = p.PlanName,
+                            SubAddonName = addonPlan?.PlanName ?? "",
                             Amount = a.Amount,
-                            DepCount = a.UserCount
-                        }
-                    ).ToListAsync();
+                            DepCount = a.DepCount
+                        });
+                    }
 
                     subDto = new SubscriptionTokenSummaryDto
                     {
@@ -499,13 +518,13 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                         DepCount = latestSub.SubscriptionDepCount,
                         PlanName = plan?.PlanName ?? string.Empty,
                         PlanDuration = latestSub.SubscriptionDays,
-                        Addons = addons.Any() ? addons : null
+                        Addons = addons
                     };
                 }
 
                 result.Add(new CompanyTokenListDto
                 {
-                    CompanyId = c.CompanyID,
+                    companyId = c.CompanyID,
                     CompanyName = c.CompanyName,
                     Status = c.Status,
                     Country = c.Country,
@@ -517,7 +536,6 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
             return result;
         }
-
         public async Task<CompanyTokenDetailDto?> GetTokenCompanyByIdAsync(int companyId)
         {
             var company = await _tocontext.Company
@@ -573,7 +591,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
             {
                 Company = new CompanyTokenListDto
                 {
-                    CompanyId = company.CompanyID,
+                    companyId = company.CompanyID,
                     CompanyName = company.CompanyName,
                     Status = company.Status,
                     Country = company.Country,
@@ -1476,360 +1494,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
         #endregion
 
 
-
-    //    #region AUTHENTICATION
-
-    //    public async Task<LoginResponseDto> AuthenticateCatalogUserAsync(LoginRequestDto request)
-    //    {
-    //        var user = await _cacontext.UserSettings
-    //            .FirstOrDefaultAsync(u => u.UserName == request.UserName
-    //                                   || u.PhoneNumber == request.UserName);
-
-    //        if (user == null)
-    //            throw new UnauthorizedAccessException("User not found.");
-
-    //        if (user.Password != request.Password)
-    //            throw new UnauthorizedAccessException("Invalid password.");
-
-    //        if (user.Active != true)
-    //            throw new UnauthorizedAccessException("User is inactive. Please contact administrator.");
-
-    //        var company = await _cacontext.tblCompany
-    //            .FirstOrDefaultAsync(c => c.CompanyId == user.CompanyId);
-
-    //        var token = GenerateJwtToken(user, company);
-
-    //        return new LoginResponseDto
-    //        {
-    //            Token = token,
-    //            UserId = user.UserId,
-    //            UserName = user.UserName ?? string.Empty,
-    //            RoleId = user.UserRoleId,     // ✅ Use UserRoleId
-    //            CompanyId = user.CompanyId,
-    //            Module = "Catalog",
-    //            Message = "Login successful"
-    //        };
-    //    }
-
-    //    public async Task<LoginResponseDto> AuthenticateUserAsync(LoginRequestDto request)
-    //    {
-    //        try
-    //        {
-    //            return await AuthenticateCatalogUserAsync(request);
-    //        }
-    //        catch (UnauthorizedAccessException)
-    //        {
-    //            throw new UnauthorizedAccessException("Invalid username or password.");
-    //        }
-    //    }
-
-    //    // ✅ CT_Company → CT_tblCompany
-    //    private string GenerateJwtToken(CT_UserSetting user, CT_tblCompany? company = null)
-    //    {
-    //        var tokenHandler = new JwtSecurityTokenHandler();
-    //        var key = Encoding.ASCII.GetBytes("YourSuperSecretKeyHereAtLeast32CharactersLong");
-
-    //        var claims = new List<Claim>
-    //{
-    //    new Claim(ClaimTypes.NameIdentifier, user.UserId.ToString()),
-    //    new Claim(ClaimTypes.Name, user.UserName ?? string.Empty),
-    //    new Claim("UserId", user.UserId.ToString()),
-    //    new Claim("PhoneNumber", user.PhoneNumber ?? string.Empty),
-    //    new Claim("Email", user.Email ?? string.Empty)
-    //};
-
-    //        // ✅ CORRECTED: Use UserRoleId instead of RoleId
-    //        if (user.UserRoleId.HasValue)
-    //            claims.Add(new Claim(ClaimTypes.Role, user.UserRoleId.Value.ToString()));
-
-    //        if (user.CompanyId.HasValue)
-    //            claims.Add(new Claim("CompanyId", user.CompanyId.Value.ToString()));
-
-    //        if (company != null)
-    //            claims.Add(new Claim("CompanyName", company.CompanyName ?? string.Empty));
-
-    //        var tokenDescriptor = new SecurityTokenDescriptor
-    //        {
-    //            Subject = new ClaimsIdentity(claims),
-    //            Expires = DateTime.UtcNow.AddDays(7),
-    //            SigningCredentials = new SigningCredentials(
-    //                new SymmetricSecurityKey(key),
-    //                SecurityAlgorithms.HmacSha256Signature)
-    //        };
-
-    //        var token = tokenHandler.CreateToken(tokenDescriptor);
-    //        return tokenHandler.WriteToken(token);
-    //    }
-
-    //    #endregion
-
-        //#region CATALOG
-
-        //public async Task<int> RegisterCatalogCompanyAsync(CompanyCatalogRegistrationRequestDto request)
-        //{
-        //    using var transaction = await _cacontext.Database.BeginTransactionAsync();
-        //    try
-        //    {
-        //        var company = new CT_tblCompany
-        //        {
-        //            CompanyName = request.CompanyName,
-        //            AddressLine1 = request.CompanyAddress,
-        //            Phoneno1 = request.Phone1,
-        //            Phoneno2 = request.Phone2,
-        //            TaxRegNo = request.RegNo,
-        //            Email = request.Email,
-        //            Active = true,
-        //            CreatedDate = DateTime.Now,
-        //            ValidityDate = DateTime.Today.AddDays(14)
-        //        };
-
-        //        _cacontext.tblCompany.Add(company);
-        //        await _cacontext.SaveChangesAsync();
-
-        //        // ✅ Create Admin User (optional)
-        //        if (!string.IsNullOrEmpty(request.UserName) && !string.IsNullOrEmpty(request.Password))
-        //        {
-        //            _cacontext.Users.Add(new CT_Users
-        //            {
-        //                CompanyId = company.CompanyId,
-        //                UserName = request.UserName,
-        //                Password = request.Password,
-        //                UserType = "ADMIN",
-        //                UserCreatedOn = DateTime.Now,
-        //                UserCreatedBy = 0,
-        //                UserStatus = true
-        //            });
-        //        }
-
-        //        // ✅ Default Trial Subscription
-        //        var startDate = DateTime.Today;
-        //        var endDate = startDate.AddDays(14);
-
-        //        _cacontext.CompanySubscriptions.Add(new CT_CompanySubscription
-        //        {
-        //            CompanyId = company.CompanyId,
-        //            PlanId = 0,
-        //            SubscriptionStartDate = startDate,
-        //            SubscriptionEndDate = endDate,
-        //            SubscriptionDays = 14,
-        //            SubscriptionAmount = 0,
-        //            SubscriptionUserCount = 2,
-        //            Status = "TRIAL",
-        //            RateType = "STANDARD",
-        //            CreatedOn = DateTime.Now
-        //        });
-
-        //        // ✅ Labels
-        //        if (request.Labels != null)
-        //        {
-        //            foreach (var label in request.Labels)
-        //            {
-        //                _cacontext.CompanyLabel.Add(new CT_CompanyLabel
-        //                {
-        //                    CompanyId = company.CompanyId,
-        //                    SettingKey = label.SettingKey,
-        //                    DisplayName = label.DisplayName,
-        //                    DisplayNameTa = label.DisplayNameTa,
-        //                    DisplayNameMa = label.DisplayNameMa,
-        //                    CreatedBy = 0
-        //                });
-        //            }
-        //        }
-
-        //        // ✅ Replace CT_CompanySettings with CT_tblCompanySettings
-        //        if (request.Settings != null)
-        //        {
-        //            foreach (var setting in request.Settings)
-        //            {
-        //                _cacontext.tblCompanySettings.Add(new CT_tblCompanySettings
-        //                {
-        //                    CompanyId = company.CompanyId,
-        //                    KeyCode = setting.KeyCode,
-        //                    Value = setting.Value,
-        //                    Active = true
-        //                });
-        //            }
-        //        }
-
-        //        await _cacontext.SaveChangesAsync();
-        //        await transaction.CommitAsync();
-
-        //        return company.CompanyId;
-        //    }
-        //    catch
-        //    {
-        //        await transaction.RollbackAsync();
-        //        throw;
-        //    }
-        //}
-
-        //public async Task<List<CompanyCatalogListDto>> GetAllCatalogCompaniesAsync()
-        //{
-        //    var companies = await _cacontext.Company.ToListAsync();
-        //    var result = new List<CompanyCatalogListDto>();
-
-        //    foreach (var c in companies)
-        //    {
-        //        var latestSub = await _cacontext.CompanySubscriptions
-        //            .Where(s => s.CompanyId == c.CompanyId)
-        //            .OrderByDescending(s => s.SubscriptionEndDate)
-        //            .FirstOrDefaultAsync();
-
-        //        SubscriptionCatalogueSummaryDto? subDto = null;
-
-        //        if (latestSub != null)
-        //        {
-        //            var planName = await _cacontext.SubscribePlan
-        //                .Where(p => p.PlanId == latestSub.PlanId)
-        //                .Select(p => p.PlanName)
-        //                .FirstOrDefaultAsync();
-
-        //            string realStatus = latestSub.Status?.Trim().ToUpper() ?? "UNKNOWN";
-
-        //            if (realStatus == "ACTIVE" && latestSub.SubscriptionEndDate < DateTime.Now)
-        //                realStatus = "EXPIRED";
-        //            else if (realStatus == "TRIAL" && latestSub.SubscriptionEndDate < DateTime.Now)
-        //                realStatus = "TRIAL_EXPIRED";
-
-        //            subDto = new SubscriptionCatalogueSummaryDto
-        //            {
-        //                SubId = latestSub.SubId,
-        //                Status = realStatus,
-        //                StartDate = latestSub.SubscriptionStartDate,
-        //                EndDate = latestSub.SubscriptionEndDate,
-        //                Amount = latestSub.SubscriptionAmount,
-        //                DealerAmount = latestSub.DealerAmount,
-        //                RateType = latestSub.RateType,
-        //                UserCount = latestSub.SubscriptionUserCount ?? 0,
-        //                PlanName = planName ?? string.Empty
-        //            };
-        //        }
-
-        //        result.Add(new CompanyCatalogListDto
-        //        {
-        //            CompanyId = c.CompanyId,
-        //            CompanyName = c.CompanyName ?? string.Empty,
-        //            CompanyAddress = c.CompanyAddress,
-        //            CompanyPhone1 = c.CompanyPhone1,
-        //            CompanyPhone2 = c.CompanyPhone2,
-        //            CompanyRegNo = c.CompanyRegNo,
-        //            DistrictName = c.DistrictName,
-        //            StateName = c.StateName,
-        //            CompanyCreatedOn = c.CompanyCreatedOn,
-        //            CompanyActive = c.CompanyActive,
-        //            CustomDate = c.CustomDate,
-        //            Subscription = subDto
-        //        });
-        //    }
-
-        //    return result;
-        //}
-
-        //public async Task<CompanyCatalogDetailDto?> GetCatalogCompanyByIdAsync(int companyId)
-        //{
-        //    var company = await _cacontext.Company
-        //        .FirstOrDefaultAsync(c => c.CompanyId == companyId);
-
-        //    if (company == null) return null;
-
-        //    var latestSub = await _cacontext.CompanySubscriptions
-        //        .Where(s => s.CompanyId == companyId)
-        //        .OrderByDescending(s => s.SubscriptionEndDate)
-        //        .FirstOrDefaultAsync();
-
-        //    SubscriptionCatalogueSummaryDto? subDto = null;
-
-        //    if (latestSub != null)
-        //    {
-        //        var planName = await _cacontext.SubscribePlan
-        //            .Where(p => p.PlanId == latestSub.PlanId)
-        //            .Select(p => p.PlanName)
-        //            .FirstOrDefaultAsync();
-
-        //        string realStatus = latestSub.Status?.Trim().ToUpper() ?? "UNKNOWN";
-
-        //        if (realStatus == "ACTIVE" && latestSub.SubscriptionEndDate < DateTime.Now)
-        //            realStatus = "EXPIRED";
-        //        else if (realStatus == "TRIAL" && latestSub.SubscriptionEndDate < DateTime.Now)
-        //            realStatus = "TRIAL_EXPIRED";
-
-        //        var addons = await (
-        //            from a in _cacontext.CompanySubscriptionAddon
-        //            join p in _cacontext.SubscribePlan on a.PlanId equals p.PlanId
-        //            where a.CompanyId == companyId
-        //                  && a.MainPlanId == latestSub.SubId
-        //                  && a.Status == "ACTIVE"
-        //            select new CatalogueAddonSummaryDto
-        //            {
-        //                SubAddonId = a.Id,
-        //                AddonPlanName = p.PlanName,
-        //                Amount = a.Amount,
-        //                DealerAmount = a.DealerAmount,
-        //                RateType = a.RateType,
-        //                UserCount = a.UserCount,
-        //                Status = a.Status
-        //            }
-        //        ).ToListAsync();
-
-        //        subDto = new SubscriptionCatalogueSummaryDto
-        //        {
-        //            SubId = latestSub.SubId,
-        //            Status = realStatus,
-        //            StartDate = latestSub.SubscriptionStartDate,
-        //            EndDate = latestSub.SubscriptionEndDate,
-        //            Amount = latestSub.SubscriptionAmount,
-        //            DealerAmount = latestSub.DealerAmount,
-        //            RateType = latestSub.RateType,
-        //            UserCount = latestSub.SubscriptionUserCount ?? 0,
-        //            PlanName = planName ?? string.Empty,
-        //            Addons = addons.Any() ? addons : null
-        //        };
-        //    }
-
-        //    return new CompanyCatalogDetailDto
-        //    {
-        //        Company = new CompanyCatalogListDto
-        //        {
-        //            CompanyId = company.CompanyId,
-        //            CompanyName = company.CompanyName ?? string.Empty,
-        //            CompanyAddress = company.CompanyAddress,
-        //            CompanyPhone1 = company.CompanyPhone1,
-        //            CompanyPhone2 = company.CompanyPhone2,
-        //            CompanyRegNo = company.CompanyRegNo,
-        //            DistrictName = company.DistrictName,
-        //            StateName = company.StateName,
-        //            CompanyCreatedOn = company.CompanyCreatedOn,
-        //            CompanyActive = company.CompanyActive,
-        //            CustomDate = company.CustomDate,
-        //            Subscription = subDto
-        //        },
-        //        // ✅ Replace CompanySetting with tblCompanySettings
-        //        Settings = await _cacontext.tblCompanySettings
-        //        .Where(s => s.CompanyId == companyId && s.Active == true)
-        //         .Select(s => new CompanyCatalogSettingDto
-        //        {
-        //           KeyCode = s.KeyCode,
-        //             Value = s.Value
-        //         })
-        //        .ToListAsync(),
-
-        //        Labels = await _cacontext.CompanyLabel
-        //            .Where(l => l.CompanyId == companyId)
-        //            .Select(l => new CompanyCatalogLabelDto
-        //            {
-        //                SettingKey = l.SettingKey,
-        //                DisplayName = l.DisplayName,
-        //                DisplayNameTa = l.DisplayNameTa,
-        //                DisplayNameMa = l.DisplayNameMa
-        //            })
-        //            .ToListAsync()
-        //    };
-        //}
-
-        //#endregion
-
-
-        #region CATALOG
+       #region CATALOG
 
         public async Task<int> RegisterCatalogCompanyAsync(CompanyCatalogRegistrationRequestDto request)
         {
@@ -1993,17 +1658,17 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     };
                 }
 
-                // ✅ Map tblCompany fields to DTO
+              
                 result.Add(new CompanyCatalogListDto
                 {
                     CompanyId = c.CompanyId,
                     CompanyName = c.CompanyName,
-                    CompanyAddress = c.AddressLine1,    // ✅ AddressLine1
-                    CompanyPhone1 = c.Phoneno1,         // ✅ Phoneno1
-                    CompanyPhone2 = c.Phoneno2,         // ✅ Phoneno2
-                    CompanyRegNo = c.TaxRegNo,          // ✅ TaxRegNo
-                    CompanyActive = c.Active,           // ✅ Active
-                    CompanyCreatedOn = c.CreatedDate,   // ✅ CreatedDate
+                    CompanyAddress = c.AddressLine1,    
+                    CompanyPhone1 = c.Phoneno1,         
+                    CompanyPhone2 = c.Phoneno2,         
+                    CompanyRegNo = c.TaxRegNo,          
+                    CompanyActive = c.Active,          
+                    CompanyCreatedOn = c.CreatedDate,   
                     CompanyLogo = c.Logo,
                     AddressLine2 = c.AddressLine2,
                     Email = c.Email,
@@ -2043,7 +1708,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
                 if (company == null) throw new Exception("Company not found");
 
-                // Update company fields
+             
                 company.CompanyName = dto.CompanyName;
                 company.AddressLine1 = dto.CompanyAddress;
                 company.AddressLine2 = dto.AddressLine2;
@@ -2073,7 +1738,6 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                 if (dto.CompanyActive.HasValue)
                     company.Active = dto.CompanyActive.Value;
 
-                // Update settings - remove old, add new
                 _cacontext.tblCompanySettings.RemoveRange(
                     _cacontext.tblCompanySettings.Where(s => s.CompanyId == dto.CompanyId));
 
@@ -2090,7 +1754,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     }));
                 }
 
-                // Update labels - remove old, add new
+                
                 _cacontext.CompanyLabel.RemoveRange(
                     _cacontext.CompanyLabel.Where(l => l.CompanyId == dto.CompanyId));
 
@@ -2120,7 +1784,6 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
         }
         public async Task<CompanyCatalogDetailDto?> GetCatalogCompanyByIdAsync(int companyId)
         {
-            // ✅ Use tblCompany instead of Company
             var company = await _cacontext.tblCompany
                 .FirstOrDefaultAsync(c => c.CompanyId == companyId);
 
@@ -2182,7 +1845,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
             return new CompanyCatalogDetailDto
             {
-                // ✅ Map tblCompany fields to DTO
+            
                 Company = new CompanyCatalogListDto
                 {
                     CompanyId = company.CompanyId,
@@ -2216,7 +1879,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     SoldBy = company.SoldBy,
                     Subscription = subDto
                 },
-                // ✅ Use tblCompanySettings
+        
                 Settings = await _cacontext.tblCompanySettings
                     .Where(s => s.CompanyId == companyId && s.Active == true)
                     .Select(s => new CompanyCatalogSettingDto
@@ -2239,14 +1902,6 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
             };
         }
         #endregion
-
-
-
-
-
-
-
-
 
     }
 }

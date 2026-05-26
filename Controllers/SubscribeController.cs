@@ -366,16 +366,6 @@ namespace XeniaRegistrationBackend.Controllers
             });
         }
 
-
-        [HttpPut("temple/planModuleMap/{id}")]
-        public async Task<IActionResult> UpdateTemplePlanModule(int id, [FromBody] List<TK_PlanModuleMap> request)
-        {
-            var updated = await _planModuleMapRepository.UpdateTemplePlanModuleAsync(request);
-            if (!updated) return NotFound("Mapping not found");
-
-            return Ok(new { Message = "Mapping updated successfully" });
-        }
-
        
         [HttpGet("temple/planModuleMap/{id}")]
         public async Task<IActionResult> GetTemplePlanModuleById(int id)
@@ -394,27 +384,27 @@ namespace XeniaRegistrationBackend.Controllers
             return Ok(list);
         }
 
-
         [HttpPost("rental/planModuleMap")]
-        public async Task<IActionResult> CreateRentalPlanModule([FromBody] XRS_PlanModuleMap request)
+        public async Task<IActionResult> CreateRentalPlanModule([FromBody] List<XRS_PlanModuleMap> request)
         {
-            var id = await _planModuleMapRepository.CreateRentalPlanModuleAsync(request);
+            var ids = await _planModuleMapRepository.CreateRentalPlanModuleAsync(request);
+
             return Ok(new
             {
-                Message = "Module mapped to plan successfully",
-                SubPlanId = id
+                Message = "Rental plan modules replaced successfully",
+                SubPlanIds = ids
             });
         }
 
 
-        [HttpPut("rental/planModuleMap/{id}")]
-        public async Task<IActionResult> UpdateRentalPlanModule(int id, [FromBody] XRS_PlanModuleMap request)
-        {
-            var updated = await _planModuleMapRepository.UpdateRentalPlanModuleAsync(id, request);
-            if (!updated) return NotFound("Mapping not found");
+        //[HttpPut("rental/planModuleMap/{id}")]
+        //public async Task<IActionResult> UpdateRentalPlanModule(int id, [FromBody] XRS_PlanModuleMap request)
+        //{
+        //    var updated = await _planModuleMapRepository.UpdateRentalPlanModuleAsync(id, request);
+        //    if (!updated) return NotFound("Mapping not found");
 
-            return Ok(new { Message = "Mapping updated successfully" });
-        }
+        //    return Ok(new { Message = "Mapping updated successfully" });
+        //}
 
 
         [HttpGet("rental/planModuleMap/{id}")]

@@ -8,13 +8,13 @@ namespace XeniaRegistrationBackend.Repositories.PlanModule
     public interface IPlanModuleMapRepository
     {
         Task<List<int>> CreateTemplePlanModuleAsync(List<TK_PlanModuleMap> request);
-        Task<bool> UpdateTemplePlanModuleAsync(List<TK_PlanModuleMap> request);
+      
         Task<PlanModuleMapResponseDto?> GetTemplePlanModuleByIdAsync(int subPlanId);
         Task<List<PlanModuleMapResponseDto>> GetTempleAllAsync();
 
 
-        Task<int> CreateRentalPlanModuleAsync(XRS_PlanModuleMap request);
-        Task<bool> UpdateRentalPlanModuleAsync(int subPlanId, XRS_PlanModuleMap request);
+        Task<List<int>> CreateRentalPlanModuleAsync(List<XRS_PlanModuleMap> request);
+        //Task<bool> UpdateRentalPlanModuleAsync(int subPlanId, XRS_PlanModuleMap request);
         Task<PlanModuleMapResponseDto?> GetRentalPlanModuleByIdAsync(int subPlanId);
         Task<List<PlanModuleMapResponseDto>> GetRentalAllAsync();
 
