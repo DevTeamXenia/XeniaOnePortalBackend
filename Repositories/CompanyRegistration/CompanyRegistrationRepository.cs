@@ -12,6 +12,7 @@ using Microsoft.IdentityModel.Tokens;
 using System.IdentityModel.Tokens.Jwt;
 using System.Security.Claims;
 using System.Text;
+using System.ComponentModel.Design;
 
 namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 {
@@ -730,7 +731,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
             {
                 var latestSub = await _recontext.CompanySubscription
                     .Where(s => s.CompanyId == c.companyID)
-                    .OrderByDescending(s => s.SubscriptionEndDate)
+                    .OrderByDescending(s => s.SubId)
                     .FirstOrDefaultAsync();
 
                 SubscriptionRentalSummaryDto? subDto = null;
@@ -1088,9 +1089,9 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
                 // ✅ Get latest subscription
                 var latestSub = await _recontext.CompanySubscription
-                    .Where(s => s.CompanyId == companyId)
-                    .OrderByDescending(s => s.SubscriptionEndDate)
-                    .FirstOrDefaultAsync();
+              .Where(s => s.CompanyId == companyId)
+               .OrderByDescending(s => s.SubId)
+                .FirstOrDefaultAsync();
 
                 SubscriptionRentalSummaryDto? subDto = null;
 
@@ -1140,9 +1141,9 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     ).ToListAsync();
 
                     var allSubscriptions = await _recontext.CompanySubscription
-    .Where(s => s.CompanyId == companyId)
-    .OrderByDescending(s => s.SubscriptionEndDate)
-    .ToListAsync();
+        .Where(s => s.CompanyId == companyId)
+        .OrderByDescending(s => s.SubId)
+        .ToListAsync();
 
                     var history = new List<SubscriptionHistoryDto>();
                     foreach (var sub in allSubscriptions)
