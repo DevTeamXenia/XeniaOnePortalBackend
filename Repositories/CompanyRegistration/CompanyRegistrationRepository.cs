@@ -219,15 +219,28 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                 else if (realStatus == "TRIAL" && subscription.SubscriptionEndDate < currentDate)
                     realStatus = "TRIAL_EXPIRED";
 
-                var addons = await _tecontext.CompanySubscriptionAddon
-                    .Where(a => a.CompanyId == companyId && a.MainPlanId == subscription.PlanId && a.Status == "ACTIVE")
-                    .Select(a => new SubscriptionTempleAddonDto
+                // ✅ Get PlanName (was missing)
+                var planName = await _tecontext.SubscribePlan
+                    .Where(p => p.PlanId == subscription.PlanId)
+                    .Select(p => p.PlanName)
+                    .FirstOrDefaultAsync();
+
+                // ✅ Fixed: MainPlanId == subscription.SubId (was wrongly using PlanId)
+                // ✅ Fixed: Join to get AddonPlanName
+                var addons = await (
+                    from a in _tecontext.CompanySubscriptionAddon
+                    join p in _tecontext.SubscribePlan on a.PlanId equals p.PlanId
+                    where a.CompanyId == companyId
+                          && a.MainPlanId == subscription.SubId
+                          && a.Status == "ACTIVE"
+                    select new SubscriptionTempleAddonDto
                     {
                         SubAddonId = a.SubAddonId,
+                        SubAddonName = p.PlanName,
                         Amount = a.Amount,
                         UserCount = a.UserCount
-                    })
-                    .ToListAsync();
+                    }
+                ).ToListAsync();
 
                 subDto = new SubscriptionTempleSummaryDto
                 {
@@ -237,6 +250,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     EndDate = subscription.SubscriptionEndDate,
                     Amount = subscription.SubscriptionAmount,
                     UserCount = subscription.subscriptionUserCount,
+                    PlanName = planName ?? string.Empty, // ✅ was missing
                     Addons = addons.Any() ? addons : null
                 };
             }
@@ -454,16 +468,17 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
             }
         }
 
-       
+
         public async Task<List<CompanyTokenListDto>> GetAllTokenCompaniesAsync()
         {
+            DateTime currentDate = DateTime.Now;
             var companies = await _tocontext.Company.ToListAsync();
             var result = new List<CompanyTokenListDto>();
 
             foreach (var c in companies)
             {
                 var latestSub = await _tocontext.CompanySubscriptions
-                    .Where(s => s.CompanyId == c.CompanyID)
+                    .Where(s => s.CompanyId == c.CompanyID && s.Status != "PENDING")
                     .OrderByDescending(s => s.SubscriptionEndDate)
                     .FirstOrDefaultAsync();
 
@@ -471,55 +486,46 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
                 if (latestSub != null)
                 {
-                   
-                    var plan = await _tecontext.SubscribePlan
+                
+                    var plan = await _tocontext.SubscribePlans
                         .Where(p => p.PlanId == latestSub.PlanId)
-                        .Select(p => new
-                        {
-                            p.PlanName
-                        })
+                        .Select(p => new { p.PlanName })
                         .FirstOrDefaultAsync();
 
-                    
-                    var addonData = await _tocontext.CompanySubscriptionAddon
-                        .Where(a =>
-                            a.CompanyId == c.CompanyID &&
-                            a.MainPlanId == latestSub.PlanId &&
-                            a.Status == "ACTIVE")
-                        .ToListAsync();
-
-                    var addons = new List<SubscriptionTokenAddonDto>();
-
-                    foreach (var a in addonData)
-                    {
-                        var addonPlan = await _tecontext.SubscribePlan
-                            .Where(p => p.PlanId == a.PlanId)
-                            .Select(p => new
-                            {
-                                p.PlanName
-                            })
-                            .FirstOrDefaultAsync();
-
-                        addons.Add(new SubscriptionTokenAddonDto
+              
+                    var addons = await (
+                        from a in _tocontext.CompanySubscriptionAddon
+                        join p in _tocontext.SubscribePlans on a.PlanId equals p.PlanId
+                        where a.CompanyId == c.CompanyID
+                              && a.MainPlanId == latestSub.SubId
+                              && a.Status == "ACTIVE"
+                        select new SubscriptionTokenAddonDto
                         {
                             SubAddonId = a.SubAddonId,
-                            SubAddonName = addonPlan?.PlanName ?? "",
+                            SubAddonName = p.PlanName,
                             Amount = a.Amount,
                             DepCount = a.DepCount
-                        });
-                    }
+                        }
+                    ).ToListAsync();
+
+       
+                    string realStatus = latestSub.Status?.Trim().ToUpper() ?? "UNKNOWN";
+                    if (realStatus == "ACTIVE" && latestSub.SubscriptionEndDate < currentDate)
+                        realStatus = "EXPIRED";
+                    else if (realStatus == "TRIAL" && latestSub.SubscriptionEndDate < currentDate)
+                        realStatus = "TRIAL_EXPIRED";
 
                     subDto = new SubscriptionTokenSummaryDto
                     {
                         SubId = latestSub.SubId,
-                        Status = latestSub.Status,
+                        Status = realStatus,
                         StartDate = latestSub.SubscriptionStartDate,
                         EndDate = latestSub.SubscriptionEndDate,
                         Amount = latestSub.SubscriptionAmount,
                         DepCount = latestSub.SubscriptionDepCount,
                         PlanName = plan?.PlanName ?? string.Empty,
                         PlanDuration = latestSub.SubscriptionDays,
-                        Addons = addons
+                        Addons = addons.Any() ? addons : null
                     };
                 }
 
@@ -539,6 +545,8 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
         }
         public async Task<CompanyTokenDetailDto?> GetTokenCompanyByIdAsync(int companyId)
         {
+            DateTime currentDate = DateTime.Now;
+
             var company = await _tocontext.Company
                 .FirstOrDefaultAsync(c => c.CompanyID == companyId);
             if (company == null) return null;
@@ -552,41 +560,60 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
 
             if (subscription != null)
             {
-                var plan = await (
-                    from p in _tecontext.SubscribePlan
-                    where p.PlanId == subscription.PlanId
-                    select new { p.PlanName }
-                ).FirstOrDefaultAsync();
+                
+                var plan = await _tocontext.SubscribePlans
+                    .Where(p => p.PlanId == subscription.PlanId)
+                    .Select(p => new { p.PlanName })
+                    .FirstOrDefaultAsync();
+
+         
+                var addons = await (
+                    from a in _tocontext.CompanySubscriptionAddon
+                    join p in _tocontext.SubscribePlans on a.PlanId equals p.PlanId
+                    where a.CompanyId == companyId
+                          && a.MainPlanId == subscription.SubId
+                          && a.Status == "ACTIVE"
+                    select new SubscriptionTokenAddonDto
+                    {
+                        SubAddonId = a.SubAddonId,
+                        SubAddonName = p.PlanName,
+                        Amount = a.Amount,
+                        DepCount = a.DepCount
+                    }
+                ).ToListAsync();
+
+                string realStatus = subscription.Status?.Trim().ToUpper() ?? "UNKNOWN";
+                if (realStatus == "ACTIVE" && subscription.SubscriptionEndDate < currentDate)
+                    realStatus = "EXPIRED";
+                else if (realStatus == "TRIAL" && subscription.SubscriptionEndDate < currentDate)
+                    realStatus = "TRIAL_EXPIRED";
 
                 subDto = new SubscriptionTokenSummaryDto
                 {
                     SubId = subscription.SubId,
-                    Status = subscription.Status,
+                    Status = realStatus,
                     StartDate = subscription.SubscriptionStartDate,
                     EndDate = subscription.SubscriptionEndDate,
                     Amount = subscription.SubscriptionAmount,
                     DepCount = subscription.SubscriptionDepCount,
                     PlanName = plan?.PlanName ?? string.Empty,
-                    PlanDuration = subscription.SubscriptionDays
+                    PlanDuration = subscription.SubscriptionDays,
+                    Addons = addons.Any() ? addons : null
                 };
             }
 
             var settingEntity = await _tocontext.CompanySettings
                 .FirstOrDefaultAsync(s => s.CompanyId == companyId);
 
-            var settingsDto = new CompanyTokenSettingsDto();
-            if (settingEntity != null)
+            var settingsDto = settingEntity == null ? new CompanyTokenSettingsDto() : new CompanyTokenSettingsDto
             {
-                settingsDto = new CompanyTokenSettingsDto
-                {
-                    CollectCustomerName = settingEntity.CollectCustomerName,
-                    PrintCustomerName = settingEntity.PrintCustomerName,
-                    CollectCustomerMobileNumber = settingEntity.CollectCustomerMobileNumber,
-                    PrintCustomerMobileNumber = settingEntity.PrintCustomerMobileNumber,
-                    IsCustomCall = settingEntity.IsCustomCall,
-                    IsServiceEnable = settingEntity.IsServiceEnable
-                };
-            }
+                CollectCustomerName = settingEntity.CollectCustomerName,
+                PrintCustomerName = settingEntity.PrintCustomerName,
+                CollectCustomerMobileNumber = settingEntity.CollectCustomerMobileNumber,
+                PrintCustomerMobileNumber = settingEntity.PrintCustomerMobileNumber,
+                IsCustomCall = settingEntity.IsCustomCall,
+                IsServiceEnable = settingEntity.IsServiceEnable
+            };
 
             return new CompanyTokenDetailDto
             {

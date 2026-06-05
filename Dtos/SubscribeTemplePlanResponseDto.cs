@@ -9,8 +9,9 @@
         public int PlanUsers { get; set; }
         public bool PlanIsAddOn { get; set; }
         public bool PlanActive { get; set; }
-
-        public List<PlanDurationResponseDto> Durations { get; set; } = new();
+        public decimal? PlanPrice { get; set; }
+     
+        public List<PlanDurationResponseDto>? Durations { get; set; }
     }
 
     public class PlanDurationResponseDto

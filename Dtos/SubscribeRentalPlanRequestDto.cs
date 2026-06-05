@@ -8,6 +8,9 @@
         public int PlanDurationDays { get; set; }
         public bool PlanActive { get; set; } = true;
         public bool PlanIsAddOn { get; set; } 
-        public int PlanUsers { get; set; }  // ADD THIS
+        public int PlanUsers { get; set; }  
+        public List<PlanDurationRequestDto>? Durations { get; set; }
+
+     
     }
 }

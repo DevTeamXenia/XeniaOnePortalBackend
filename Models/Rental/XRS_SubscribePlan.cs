@@ -26,7 +26,8 @@ namespace XeniaRegistrationBackend.Models
 
         public bool PlanActive { get; set; } = true;
         public int PlanUsers { get; set; }
-        public bool PlanIsAddOn { get; set; } 
+        public bool PlanIsAddOn { get; set; }
+        public decimal? PlanPrice { get; set; }
         public ICollection<XRS_SubscribePlanDuration> PlanDurations { get; set; }
        = new List<XRS_SubscribePlanDuration>();
     }

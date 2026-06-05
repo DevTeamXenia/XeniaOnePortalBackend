@@ -34,35 +34,61 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
         {
             using var tx = await _tecontext.Database.BeginTransactionAsync();
 
-            var plan = new TK_SubscribePlan
+            try
             {
-                PlanName = request.PlanName,
-                PlanDescription = request.PlanDescription,
-                PlanUsers = request.PlanUsers,
-                PlanIsAddOn = false,
-                PlanActive = true
-            };
+                if (request.PlanIsAddOn)
+                {
+                    if (request.PlanPrice == null || request.PlanPrice <= 0)
+                        throw new Exception("PlanPrice is required for add-on plans");
+                }
+                else
+                {
+                    if (request.Durations == null || !request.Durations.Any())
+                        throw new Exception("Durations are required for normal plans");
+                }
 
-            _tecontext.SubscribePlan.Add(plan);
-            await _tecontext.SaveChangesAsync();
+                var plan = new TK_SubscribePlan
+                {
+                    PlanName = request.PlanName,
+                    PlanDescription = request.PlanDescription,
+                    PlanUsers = request.PlanUsers,
+                    PlanIsAddOn = request.PlanIsAddOn,
+                    PlanPrice = request.PlanIsAddOn ? request.PlanPrice : null,
+                    PlanActive = request.PlanActive
+                };
 
-            var durations = request.Durations.Select(d => new TK_SubscribePlanDuration
+                _tecontext.SubscribePlan.Add(plan);
+                await _tecontext.SaveChangesAsync();
+
+                if (!request.PlanIsAddOn)
+                {
+                    var durations = request.Durations!.Select(d => new TK_SubscribePlanDuration
+                    {
+                        PlanId = plan.PlanId,
+                        DurationDays = d.DurationDays,
+                        Price = d.Price,
+                        IsActive = true
+                    });
+
+                    _tecontext.SubscribePlanDuration.AddRange(durations);
+                }
+
+                await _tecontext.SaveChangesAsync();
+                await tx.CommitAsync();
+
+                return plan.PlanId;
+            }
+            catch
             {
-                PlanId = plan.PlanId,
-                DurationDays = d.DurationDays,
-                Price = d.Price,
-                IsActive = true
-            });
-
-            _tecontext.SubscribePlanDuration.AddRange(durations);
-
-            await _tecontext.SaveChangesAsync();
-            await tx.CommitAsync();
-
-            return plan.PlanId;
+                await tx.RollbackAsync();
+                throw;
+            }
         }
 
-        public async Task<bool> CreateTempleSubscribeUpdateAsync( int planId, SubscribeTemplePlanRequestDto request)
+
+
+
+        public async Task<bool> CreateTempleSubscribeUpdateAsync(int planId, SubscribeTemplePlanRequestDto request)
         {
             using var tx = await _tecontext.Database.BeginTransactionAsync();
 
@@ -72,11 +98,24 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
 
             if (plan == null) return false;
 
+            if (request.PlanIsAddOn)
+            {
+                if (request.PlanPrice == null || request.PlanPrice <= 0)
+                    throw new Exception("PlanPrice is required for add-on plans");
+            }
+            else
+            {
+                if (request.Durations == null || !request.Durations.Any())
+                    throw new Exception("Durations are required for normal plans");
+            }
+
             plan.PlanName = request.PlanName;
             plan.PlanDescription = request.PlanDescription;
             plan.PlanUsers = request.PlanUsers;
-            plan.PlanIsAddOn = request.planIsAddOn;
+            plan.PlanIsAddOn = request.PlanIsAddOn;
+            plan.PlanPrice = request.PlanIsAddOn ? request.PlanPrice : null;
             plan.PlanActive = request.PlanActive;
+
             plan.PlanModifiedBy = 0;
             plan.PlanModifiedOn = DateTime.Now;
 
@@ -85,16 +124,19 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
                 d.IsActive = false;
             }
 
-            var newDurations = request.Durations.Select(d => new TK_SubscribePlanDuration
+            if (!request.PlanIsAddOn)
             {
-                PlanId = plan.PlanId,
-                DurationDays = d.DurationDays,
-                Price = d.Price,
-                IsActive = true,
-                CreatedOn = DateTime.Now
-            }).ToList();
+                var newDurations = request.Durations!.Select(d => new TK_SubscribePlanDuration
+                {
+                    PlanId = plan.PlanId,
+                    DurationDays = d.DurationDays,
+                    Price = d.Price,
+                    IsActive = true,
+                    CreatedOn = DateTime.Now
+                });
 
-            await _tecontext.SubscribePlanDuration.AddRangeAsync(newDurations);
+                await _tecontext.SubscribePlanDuration.AddRangeAsync(newDurations);
+            }
 
             await _tecontext.SaveChangesAsync();
             await tx.CommitAsync();
@@ -114,21 +156,23 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
                     PlanIsAddOn = p.PlanIsAddOn,
                     PlanUsers = p.PlanUsers,
                     PlanActive = p.PlanActive,
-                    Durations = p.PlanDurations
-                        .Where(d => d.IsActive)
-                        .OrderBy(d => d.DurationDays)
-                        .Select(d => new PlanDurationResponseDto
-                        {
-                            PlanDurationId = d.PlanDurationId,
-                            DurationDays = d.DurationDays,
-                            Price = d.Price
-                        })
-                        .ToList()
+                    PlanPrice = p.PlanPrice,
+                    Durations = p.PlanIsAddOn
+                        ? null
+                        : p.PlanDurations
+                            .Where(d => d.IsActive)
+                            .OrderBy(d => d.DurationDays)
+                            .Select(d => new PlanDurationResponseDto
+                            {
+                                PlanDurationId = d.PlanDurationId,
+                                DurationDays = d.DurationDays,
+                                Price = d.Price
+                            })
+                            .ToList()
                 })
                 .ToListAsync();
         }
-
-        public async Task<SubscribeTemplePlanResponseDto?>GetSubscriptionTemplePlanByIdAsync(int planId)
+        public async Task<SubscribeTemplePlanResponseDto?> GetSubscriptionTemplePlanByIdAsync(int planId)
         {
             return await _tecontext.SubscribePlan
                 .Include(p => p.PlanDurations)
@@ -524,33 +568,53 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
             return true;
         }
 
-        public async Task<int> CreateRentalSubscribePlanAsync( SubscribeRentalPlanRequestDto request)
+        public async Task<int> CreateRentalSubscribePlanAsync(SubscribeRentalPlanRequestDto request)
         {
+            using var tx = await _recontext.Database.BeginTransactionAsync();
+
+            // VALIDATION
+            if (request.PlanIsAddOn)
+            {
+                if (request.PlanPrice == null)
+                    throw new Exception("PlanPrice is required for add-on plans");
+            }
+            else
+            {
+                if (request.Durations == null || !request.Durations.Any())
+                    throw new Exception("Durations are required for normal plans");
+            }
+
+            // CREATE PLAN
             var plan = new XRS_SubscribePlan
             {
                 PlanName = request.PlanName,
                 PlanDescription = request.PlanDescription,
                 PlanActive = request.PlanActive,
-                 PlanUsers = request.PlanUsers  ,
-                PlanIsAddOn = request.PlanIsAddOn   // ADD THIS// ADD THIS
+                PlanUsers = request.PlanUsers,
+                PlanIsAddOn = request.PlanIsAddOn,
+                PlanPrice = request.PlanIsAddOn ? request.PlanPrice : null
             };
 
             _recontext.SubscribePlan.Add(plan);
             await _recontext.SaveChangesAsync();
 
-            var duration = new XRS_SubscribePlanDuration
+            // CREATE DURATIONS ONLY FOR NORMAL PLAN
+            if (!request.PlanIsAddOn)
             {
-                PlanId = plan.PlanId,
-                DurationDays = request.PlanDurationDays,
-                Price = request.PlanPrice,
-                IsActive = true,
-                CreatedOn = DateTime.UtcNow,   // ← this was missing, causing the crash
-               
+                var durations = request.Durations!.Select(d => new XRS_SubscribePlanDuration
+                {
+                    PlanId = plan.PlanId,
+                    DurationDays = d.DurationDays,
+                    Price = d.Price,
+                    IsActive = true,
+                    CreatedOn = DateTime.UtcNow
+                });
 
-            };
+                await _recontext.SubscribePlanDurations.AddRangeAsync(durations);
+                await _recontext.SaveChangesAsync();
+            }
 
-            _recontext.SubscribePlanDurations.Add(duration);
-            await _recontext.SaveChangesAsync();
+            await tx.CommitAsync();
 
             return plan.PlanId;
         }
@@ -611,54 +675,59 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
         public async Task<int> CreateRentalSubscriptionAsync(CompanyRentalSubscriptionCreateDto dto)
         {
             using var tx = await _recontext.Database.BeginTransactionAsync();
+
             try
             {
-                var activeSubscription = await _recontext.CompanySubscription
-                    .FirstOrDefaultAsync(s =>
-                        s.CompanyId == dto.CompanyId &&
-                        s.Status == "ACTIVE");
-
-                if (activeSubscription != null)
-                {
-                    activeSubscription.Status = "EXPIRED";
-                    activeSubscription.SubscriptionEndDate = DateTime.Now;
-                    await _recontext.SaveChangesAsync();
-                }
-
-      
                 var plan = await _recontext.SubscribePlan
-                    .FirstOrDefaultAsync(p =>
-                        p.PlanId == dto.PlanId &&
-                        p.PlanActive);
+                    .FirstOrDefaultAsync(p => p.PlanId == dto.PlanId && p.PlanActive);
 
                 if (plan == null)
                     throw new Exception("Invalid or inactive plan");
 
-                var duration = await _recontext.SubscribePlanDurations
-                    .FirstOrDefaultAsync(d =>
-                        d.PlanDurationId == dto.PlanDurationId &&
-                        d.PlanId == dto.PlanId &&
-                        d.IsActive);
+                DateTime startDate = DateTime.Now;
+                DateTime endDate;
+                int days = 0;
+                decimal amount = 0;
 
-                if (duration == null)
-                    throw new Exception("Invalid or inactive duration");
+                // 🟠 ADD-ON PLAN FLOW
+                if (plan.PlanIsAddOn)
+                {
+                    if (plan.PlanPrice == null)
+                        throw new Exception("Add-on plan price is missing");
 
-                var startDate = DateTime.Now;
-                var endDate = startDate
-                    .AddDays(duration.DurationDays)
-                    .AddTicks(-1);
+                    days = 0;
+                    amount = plan.PlanPrice.Value;
+
+                    endDate = startDate; 
+                }
+                else
+                {
+      
+                    var duration = await _recontext.SubscribePlanDurations
+                        .FirstOrDefaultAsync(d =>
+                            d.PlanDurationId == dto.PlanDurationId &&
+                            d.PlanId == dto.PlanId &&
+                            d.IsActive);
+
+                    if (duration == null)
+                        throw new Exception("Invalid or inactive duration");
+
+                    days = duration.DurationDays;
+                    amount = duration.Price;
+
+                    endDate = startDate.AddDays(days).AddTicks(-1);
+                }
 
                 var subscription = new XRS_CompanySubscription
                 {
                     PlanId = plan.PlanId,
-                    PlanDurationId = duration.PlanDurationId, // ✅ ADD THIS
+                    PlanDurationId = plan.PlanIsAddOn ? null : dto.PlanDurationId,
                     CompanyId = dto.CompanyId,
                     SubscriptionStartDate = startDate,
                     SubscriptionEndDate = endDate,
-                    SubscriptionDays = duration.DurationDays,
-                    SubscriptionAmount = duration.Price,
-                    //SubscriptionUserCount = plan.PlanUsers,  // ✅ ADD THIS
-                    SubscriptionUserCount = plan.PlanUsers ,  // ✅ fix null
+                    SubscriptionDays = days,
+                    SubscriptionAmount = amount,
+                    SubscriptionUserCount = plan.PlanUsers,
                     Status = "ACTIVE"
                 };
 
@@ -674,7 +743,6 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
                 throw;
             }
         }
-
         //public async Task<int> CreateRentalAddonAsync(CompanyRentalSubscriptionAddonCreateDto dto)
         //{
         //    // ✅ Validate active subscription exists
@@ -1017,6 +1085,15 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
                 {
                     activeSubscription.Status = "EXPIRED";
                     activeSubscription.SubscriptionEndDate = DateTime.Now;
+                    var activeAddons = await _ticontext.CompanySubscriptionAddon
+                          .Where(a =>
+                      a.CompanyId == dto.CompanyId &&
+                      a.Status == "ACTIVE")
+                   .ToListAsync();
+
+                    foreach (var addon in activeAddons)
+                        addon.Status = "EXPIRED";
+
                     await _ticontext.SaveChangesAsync();
                 }
 

@@ -11,7 +11,6 @@ namespace XeniaRegistrationBackend.Models.Temple
         public int PlanId { get; set; }
 
 
-        [Required, MaxLength(200)]
         public string PlanName { get; set; } = null!;
 
         [MaxLength(500)]
@@ -29,8 +28,9 @@ namespace XeniaRegistrationBackend.Models.Temple
         public DateTime? PlanModifiedOn { get; set; }
 
         public bool PlanActive { get; set; } = true;
-
+    
         public virtual ICollection<TK_SubscribePlanDuration> PlanDurations { get; set; }
       = new List<TK_SubscribePlanDuration>();
+
     }
 }
