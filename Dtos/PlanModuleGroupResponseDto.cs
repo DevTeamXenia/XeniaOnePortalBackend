@@ -1,17 +1,6 @@
 ﻿namespace XeniaRegistrationBackend.Dtos
 {
-    // ── Single item response ───────────────────────
-    public class PlanModuleMapResponseDto
-    {
-        public int SubPlanId { get; set; }
-        public int PlanId { get; set; }
-        public string? PlanName { get; set; }
-        public int ModuleId { get; set; }
-        public string? ModuleName { get; set; }
-        public bool Active { get; set; }
-    }
 
-    // ── Grouped response — Plan with Multiple Modules
     public class PlanModuleGroupResponseDto
     {
         public int PlanId { get; set; }

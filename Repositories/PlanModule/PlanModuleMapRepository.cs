@@ -1,7 +1,6 @@
 namespace XeniaRegistrationBackend.Repositories.PlanModule
 {
     using Microsoft.EntityFrameworkCore;
-    using Microsoft.IdentityModel.Tokens;
     using XeniaRegistrationBackend.Dtos;
     using XeniaRegistrationBackend.Models;
     using XeniaRegistrationBackend.Models.Catalog;
@@ -30,10 +29,45 @@ namespace XeniaRegistrationBackend.Repositories.PlanModule
             if (request == null || !request.Any())
                 return ids;
 
-            // Get all PlanIds from request
             var planIds = request.Select(x => x.PlanId).Distinct().ToList();
 
-            // Remove all existing records for those PlanIds
+            if (planIds.Count == 1)
+            {
+                var planId = planIds.First();
+                var requestedModuleIds = request.Select(x => x.ModuleId).OrderBy(id => id).ToList();
+
+
+                var allExistingPlans = await _tecontext.PlanModuleMap
+                    .GroupBy(x => x.PlanId)
+                    .Select(g => new
+                    {
+                        PlanId = g.Key,
+                        ModuleIds = g.Select(x => x.ModuleId).OrderBy(id => id).ToList()
+                    })
+                    .ToListAsync();
+
+                var duplicatePlan = allExistingPlans
+                    .FirstOrDefault(p => p.PlanId != planId &&
+                                        p.ModuleIds.SequenceEqual(requestedModuleIds));
+
+                if (duplicatePlan != null)
+                {
+                    throw new InvalidOperationException(
+                        $"A plan with ID {duplicatePlan.PlanId} already has the exact same modules. " +
+                        "Cannot create duplicate plan configuration.");
+                }
+
+                var hasActiveSubscriptions = await _tecontext.CompanySubscriptions
+                    .AnyAsync(cs => cs.PlanId == planId);
+
+                if (hasActiveSubscriptions)
+                {
+                    throw new InvalidOperationException(
+                        $"Cannot update Plan ID {planId} because it has active company subscriptions. " +
+                        "Please deactivate all subscriptions before updating the plan modules.");
+                }
+            }
+
             var existingRecords = await _tecontext.PlanModuleMap
                 .Where(x => planIds.Contains(x.PlanId))
                 .ToListAsync();
@@ -44,7 +78,6 @@ namespace XeniaRegistrationBackend.Repositories.PlanModule
                 await _tecontext.SaveChangesAsync();
             }
 
-            // Insert new records
             var newRecords = request.Select(x => new TK_PlanModuleMap
             {
                 PlanId = x.PlanId,
@@ -60,43 +93,83 @@ namespace XeniaRegistrationBackend.Repositories.PlanModule
             return ids;
         }
 
-
-
-        public async Task<PlanModuleMapResponseDto?> GetTemplePlanModuleByIdAsync(int subPlanId)
+        public async Task<PlanModuleGroupResponseDto?> GetTemplePlanModuleByIdAsync(int subPlanId)
         {
-            return await (
+            var query = await (
                 from pm in _tecontext.PlanModuleMap
                 join p in _tecontext.SubscribePlan on pm.PlanId equals p.PlanId
                 join m in _tecontext.Modules on pm.ModuleId equals m.ModuleId
-                where pm.SubPlanId == subPlanId
-                select new PlanModuleMapResponseDto
+                select new
                 {
-                    SubPlanId = pm.SubPlanId,
-                    PlanId = p.PlanId,
-                    PlanName = p.PlanName,
-                    ModuleId = m.ModuleId,
-                    ModuleName = m.ModuleName,
-                    Active = pm.Active
-                }
-            ).FirstOrDefaultAsync();
-        }
-
-        public async Task<List<PlanModuleMapResponseDto>> GetTempleAllAsync()
-        {
-            return await (
-                from pm in _tecontext.PlanModuleMap
-                join p in _tecontext.SubscribePlan on pm.PlanId equals p.PlanId
-                join m in _tecontext.Modules on pm.ModuleId equals m.ModuleId
-                select new PlanModuleMapResponseDto
-                {
-                    SubPlanId = pm.SubPlanId,
-                    PlanId = p.PlanId,
-                    PlanName = p.PlanName,
-                    ModuleId = m.ModuleId,
-                    ModuleName = m.ModuleName,
-                    Active = pm.Active
+                    p.PlanId,
+                    p.PlanName,
+                    pm.SubPlanId,
+                    m.ModuleId,
+                    m.ModuleName,
+                    pm.Active
                 }
             ).ToListAsync();
+
+            var planWithModule = query.FirstOrDefault(x => x.SubPlanId == subPlanId);
+
+            if (planWithModule == null)
+                return null;
+
+            // Get all modules for that plan
+            var result = query
+                .Where(x => x.PlanId == planWithModule.PlanId)
+                .GroupBy(x => new { x.PlanId, x.PlanName })
+                .Select(g => new PlanModuleGroupResponseDto
+                {
+                    PlanId = g.Key.PlanId,
+                    PlanName = g.Key.PlanName,
+                    Modules = g.Select(m => new ModuleItemDto
+                    {
+                        SubPlanId = m.SubPlanId,
+                        ModuleId = m.ModuleId,
+                        ModuleName = m.ModuleName,
+                        Active = m.Active
+                    }).ToList()
+                })
+                .FirstOrDefault();
+
+            return result;
+        }
+
+        public async Task<List<PlanModuleGroupResponseDto>> GetTempleAllAsync()
+        {
+            var query = await (
+                from pm in _tecontext.PlanModuleMap
+                join p in _tecontext.SubscribePlan on pm.PlanId equals p.PlanId
+                join m in _tecontext.Modules on pm.ModuleId equals m.ModuleId
+                select new
+                {
+                    p.PlanId,
+                    p.PlanName,
+                    pm.SubPlanId,
+                    m.ModuleId,
+                    m.ModuleName,
+                    pm.Active
+                }
+            ).ToListAsync();
+
+            var result = query
+                .GroupBy(x => new { x.PlanId, x.PlanName })
+                .Select(g => new PlanModuleGroupResponseDto
+                {
+                    PlanId = g.Key.PlanId,
+                    PlanName = g.Key.PlanName,
+                    Modules = g.Select(m => new ModuleItemDto
+                    {
+                        SubPlanId = m.SubPlanId,
+                        ModuleId = m.ModuleId,
+                        ModuleName = m.ModuleName,
+                        Active = m.Active
+                    }).ToList()
+                })
+                .ToList();
+
+            return result;
         }
 
 
@@ -221,54 +294,81 @@ namespace XeniaRegistrationBackend.Repositories.PlanModule
             return ids;
         }
 
-        //public async Task<bool> UpdateRentalPlanModuleAsync(int subPlanId, XRS_PlanModuleMap request)
-        //{
-        //    var map = await _recontext.PlanModuleMap.FindAsync(subPlanId);
-        //    if (map == null) return false;
 
-        //    map.PlanId = request.PlanId;
-        //    map.ModuleId = request.ModuleId;
-        //    map.Active = request.Active;
-
-        //    await _recontext.SaveChangesAsync();
-        //    return true;
-        //}
-
-        public async Task<PlanModuleMapResponseDto?> GetRentalPlanModuleByIdAsync(int subPlanId)
+        public async Task<PlanModuleGroupResponseDto?> GetRentalPlanModuleByIdAsync(int planId)
         {
-            return await (
+            var query = await (
                 from pm in _recontext.PlanModuleMap
                 join p in _recontext.SubscribePlan on pm.PlanId equals p.PlanId
                 join m in _recontext.Module on pm.ModuleId equals m.ModuleId
-                where pm.SubPlanId == subPlanId
-                select new PlanModuleMapResponseDto
+                where pm.PlanId == planId
+                select new
                 {
-                    SubPlanId = pm.SubPlanId,
-                    PlanId = p.PlanId,
-                    PlanName = p.PlanName,
-                    ModuleId = m.ModuleId,
-                    ModuleName = m.ModuleName,
-                    Active = pm.Active
-                }
-            ).FirstOrDefaultAsync();
-        }
-
-        public async Task<List<PlanModuleMapResponseDto>> GetRentalAllAsync()
-        {
-            return await (
-                from pm in _recontext.PlanModuleMap
-                join p in _recontext.SubscribePlan on pm.PlanId equals p.PlanId
-                join m in _recontext.Module on pm.ModuleId equals m.ModuleId
-                select new PlanModuleMapResponseDto
-                {
-                    SubPlanId = pm.SubPlanId,
-                    PlanId = p.PlanId,
-                    PlanName = p.PlanName,
-                    ModuleId = m.ModuleId,
-                    ModuleName = m.ModuleName,
-                    Active = pm.Active
+                    p.PlanId,
+                    p.PlanName,
+                    pm.SubPlanId,
+                    m.ModuleId,
+                    m.ModuleName,
+                    pm.Active
                 }
             ).ToListAsync();
+
+            if (!query.Any())
+                return null;
+
+            var result = query
+                .GroupBy(x => new { x.PlanId, x.PlanName })
+                .Select(g => new PlanModuleGroupResponseDto
+                {
+                    PlanId = g.Key.PlanId,
+                    PlanName = g.Key.PlanName,
+                    Modules = g.Select(m => new ModuleItemDto
+                    {
+                        SubPlanId = m.SubPlanId,
+                        ModuleId = m.ModuleId,
+                        ModuleName = m.ModuleName,
+                        Active = m.Active
+                    }).ToList()
+                })
+                .FirstOrDefault();
+
+            return result;
+        }
+
+        public async Task<List<PlanModuleGroupResponseDto>> GetRentalAllAsync()
+        {
+            var query = await (
+                from pm in _recontext.PlanModuleMap
+                join p in _recontext.SubscribePlan on pm.PlanId equals p.PlanId
+                join m in _recontext.Module on pm.ModuleId equals m.ModuleId
+                select new
+                {
+                    p.PlanId,
+                    p.PlanName,
+                    pm.SubPlanId,
+                    m.ModuleId,
+                    m.ModuleName,
+                    pm.Active
+                }
+            ).ToListAsync();
+
+            var result = query
+                .GroupBy(x => new { x.PlanId, x.PlanName })
+                .Select(g => new PlanModuleGroupResponseDto
+                {
+                    PlanId = g.Key.PlanId,
+                    PlanName = g.Key.PlanName,
+                    Modules = g.Select(m => new ModuleItemDto
+                    {
+                        SubPlanId = m.SubPlanId,
+                        ModuleId = m.ModuleId,
+                        ModuleName = m.ModuleName,
+                        Active = m.Active
+                    }).ToList()
+                })
+                .ToList();
+
+            return result;
         }
     }
 }
