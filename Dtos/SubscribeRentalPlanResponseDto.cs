@@ -10,7 +10,8 @@
 
         public bool PlanActive { get; set; }
         public int? PlanUsers { get; set; }
-        public bool PlanIsAddOn { get; set; }// change int to int?
+        public bool PlanIsAddOn { get; set; }
+        public decimal? PlanPrice { get; set; }
         public List<SubscribeRentalPlanDurationDto> Durations { get; set; }
             = new();
     }

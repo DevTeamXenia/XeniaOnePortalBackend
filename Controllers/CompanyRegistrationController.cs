@@ -21,10 +21,9 @@ namespace XeniaRegistrationBackend.Controllers
 
         #region TEMPLE
 
-
         [HttpGet("temple")]
-        public async Task<IActionResult> GetAllTempleCompany()
-        => Ok(await _repositoryCompanyRegistration.GetAllTempleCompaniesAsync());
+        public async Task<IActionResult> GetAllTempleCompany([FromQuery] string? companyName = null)
+            => Ok(await _repositoryCompanyRegistration.GetAllTempleCompaniesAsync(companyName));
 
 
         [HttpGet("temple/{id}")]

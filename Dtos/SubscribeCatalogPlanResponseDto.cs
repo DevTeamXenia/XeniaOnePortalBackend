@@ -7,7 +7,9 @@ namespace XeniaRegistrationBackend.Dtos
         public string? PlanDescription { get; set; }
         public int PlanUsers { get; set; }
         public bool PlanIsAddOn { get; set; }
+        public decimal? PlanPrice { get; set; }
         public bool PlanActive { get; set; }
+
 
         public List<CatalogPlanDurationResponseDto> Durations { get; set; } = new();
     }

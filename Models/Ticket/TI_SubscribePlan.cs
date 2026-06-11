@@ -30,7 +30,7 @@ namespace XeniaRegistrationBackend.Models
         public int? PlanModifiedBy { get; set; }
 
         public DateTime? PlanModifiedOn { get; set; }
-
+        public decimal? PlanPrice { get; set; }
         public bool PlanActive { get; set; } = true;
 
         public virtual ICollection<TI_SubscribePlanDuration> PlanDurations { get; set; }

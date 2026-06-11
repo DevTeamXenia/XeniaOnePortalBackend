@@ -122,10 +122,15 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
             }
         }
 
-        public async Task<List<CompanyTempleListDto>> GetAllTempleCompaniesAsync()
+        public async Task<List<CompanyTempleListDto>> GetAllTempleCompaniesAsync(string? companyName = null)
         {
             DateTime currentDate = DateTime.Now;
-            var companies = await _tecontext.Company.ToListAsync();
+
+            var query = _tecontext.Company.AsQueryable();
+
+            if (!string.IsNullOrWhiteSpace(companyName))
+                query = query.Where(c => c.CompanyName.ToLower().Contains(companyName.ToLower()));
+            var companies = await query.ToListAsync();
             var result = new List<CompanyTempleListDto>();
 
             foreach (var c in companies)
@@ -136,7 +141,6 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     .FirstOrDefaultAsync();
 
                 SubscriptionTempleSummaryDto? subDto = null;
-
                 if (latestSub != null)
                 {
                     string realStatus = latestSub.Status.Trim().ToUpper();
@@ -149,18 +153,23 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                         .Where(p => p.PlanId == latestSub.PlanId)
                         .Select(p => p.PlanName)
                         .FirstOrDefaultAsync();
+
                     var addons = await (
                         from a in _tecontext.CompanySubscriptionAddon
                         join p in _tecontext.SubscribePlan on a.PlanId equals p.PlanId
                         where a.CompanyId == c.CompanyId && a.MainPlanId == latestSub.SubId
-                              && a.Status == "ACTIVE"
+                             && a.Status.Trim().ToUpper() == "ACTIVE"
                         select new SubscriptionTempleAddonDto
                         {
-
                             SubAddonId = a.SubAddonId,
                             SubAddonName = p.PlanName,
-                            Amount = p.PlanPrice ?? 0,
-                            UserCount = a.UserCount
+                            PlanDescription = p.PlanDescription,
+                            Amount = a.Amount,
+                            UserCount = a.UserCount,
+                            PlanUsers = p.PlanUsers,
+                            PlanPrice = p.PlanPrice,
+                            PlanIsAddOn = p.PlanIsAddOn,
+                            PlanActive = p.PlanActive
                         }
                     ).ToListAsync();
 
@@ -219,14 +228,12 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                 else if (realStatus == "TRIAL" && subscription.SubscriptionEndDate < currentDate)
                     realStatus = "TRIAL_EXPIRED";
 
-                // ✅ Get PlanName (was missing)
                 var planName = await _tecontext.SubscribePlan
                     .Where(p => p.PlanId == subscription.PlanId)
                     .Select(p => p.PlanName)
                     .FirstOrDefaultAsync();
 
-                // ✅ Fixed: MainPlanId == subscription.SubId (was wrongly using PlanId)
-                // ✅ Fixed: Join to get AddonPlanName
+                
                 var addons = await (
                     from a in _tecontext.CompanySubscriptionAddon
                     join p in _tecontext.SubscribePlan on a.PlanId equals p.PlanId
@@ -563,7 +570,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                 
                 var plan = await _tocontext.SubscribePlans
                     .Where(p => p.PlanId == subscription.PlanId)
-                    .Select(p => new { p.PlanName })
+                    .Select(p => new { p.PlanName})
                     .FirstOrDefaultAsync();
 
          
@@ -597,6 +604,7 @@ namespace XeniaRegistrationBackend.Repositories.CompanyRegistration
                     Amount = subscription.SubscriptionAmount,
                     DepCount = subscription.SubscriptionDepCount,
                     PlanName = plan?.PlanName ?? string.Empty,
+               
                     PlanDuration = subscription.SubscriptionDays,
                     Addons = addons.Any() ? addons : null
                 };

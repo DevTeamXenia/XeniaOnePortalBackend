@@ -185,6 +185,7 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
                     PlanUsers = p.PlanUsers,
                     PlanIsAddOn = p.PlanIsAddOn,
                     PlanActive = p.PlanActive,
+                    PlanPrice = p.PlanPrice,
                     Durations = p.PlanDurations
                         .Where(d => d.IsActive)
                         .OrderBy(d => d.DurationDays)
@@ -304,7 +305,9 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
                 PlanId = dto.PlanId,
                 CompanyId = dto.CompanyId,
                 Amount = dto.Amount,
-                UserCount = dto.UserCount
+                UserCount = dto.UserCount,
+                MainPlanId = dto.MainPlanId,  
+                Status = dto.Status          
             };
 
             _tecontext.CompanySubscriptionAddon.Add(addon);
@@ -567,7 +570,33 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
             await _recontext.SaveChangesAsync();
             return true;
         }
-
+        public async Task<IEnumerable<SubscribeRentalPlanResponseDto>> GetAllRentalSubscriptionPlanAsync()
+        {
+            return await _recontext.SubscribePlan
+                .Include(p => p.PlanDurations)
+                .Select(p => new SubscribeRentalPlanResponseDto
+                {
+                    PlanId = p.PlanId,
+                    PlanName = p.PlanName,
+                    PlanDescription = p.PlanDescription,
+                    PlanActive = p.PlanActive,
+                    PlanUsers = p.PlanUsers,
+                    PlanIsAddOn = p.PlanIsAddOn,
+                    PlanPrice = p.PlanPrice,
+                    Durations = p.PlanIsAddOn
+                        ? null
+                        : p.PlanDurations
+                            .Where(d => d.IsActive)
+                            .Select(d => new SubscribeRentalPlanDurationDto
+                            {
+                                PlanDurationId = d.PlanDurationId,
+                                DurationDays = d.DurationDays,
+                                Price = d.Price,
+                            })
+                            .ToList()
+                })
+                .ToListAsync();
+        }
         public async Task<int> CreateRentalSubscribePlanAsync(SubscribeRentalPlanRequestDto request)
         {
             using var tx = await _recontext.Database.BeginTransactionAsync();
@@ -619,31 +648,59 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
             return plan.PlanId;
         }
 
-        public async Task<IEnumerable<SubscribeRentalPlanResponseDto>> GetAllRentalSubscriptionPlanAsync()
-        {
-            return await _recontext.SubscribePlan
-                .Include(p => p.PlanDurations)
-                .Select(p => new SubscribeRentalPlanResponseDto
-                {
-                    PlanId = p.PlanId,
-                    PlanName = p.PlanName,
-                    PlanDescription = p.PlanDescription,
-                    PlanActive = p.PlanActive,
-                    PlanUsers = p.PlanUsers,        // ADD THIS
-                    PlanIsAddOn = p.PlanIsAddOn,    // ADD THIS
-                    Durations = p.PlanDurations
-                        .Where(d => d.IsActive)
-                        .Select(d => new SubscribeRentalPlanDurationDto
-                        {
-                            PlanDurationId = d.PlanDurationId,
-                            DurationDays = d.DurationDays,
-                            Price = d.Price
-                        })
-                        .ToList()
-                })
-                .ToListAsync();
-        }
+        //public async Task<IEnumerable<SubscribeRentalPlanResponseDto>> GetAllRentalSubscriptionPlanAsync()
+        //{
+        //    return await _recontext.SubscribePlan
+        //        .Include(p => p.PlanDurations)
+        //        .Select(p => new SubscribeRentalPlanResponseDto
+        //        {
+        //            PlanId = p.PlanId,
+        //            PlanName = p.PlanName,
+        //            PlanDescription = p.PlanDescription,
+        //            PlanActive = p.PlanActive,
+        //            PlanUsers = p.PlanUsers,        // ADD THIS
+        //            PlanIsAddOn = p.PlanIsAddOn,    // ADD THIS
+        //            Durations = p.PlanDurations
+        //                .Where(d => d.IsActive)
+        //                .Select(d => new SubscribeRentalPlanDurationDto
+        //                {
+        //                    PlanDurationId = d.PlanDurationId,
+        //                    DurationDays = d.DurationDays,
+        //                    Price = d.Price
+        //                })
+        //                .ToList()
+        //        })
+        //        .ToListAsync();
+        //}
 
+        //public async Task<SubscribeRentalPlanResponseDto?> GetSubscriptionRentalPlanByIdAsync(int planId)
+        //{
+        //    return await _recontext.SubscribePlan
+        //        .Include(p => p.PlanDurations)
+        //        .Where(p => p.PlanId == planId)
+        //        .Select(p => new SubscribeRentalPlanResponseDto
+        //        {
+        //            PlanId = p.PlanId,
+        //            PlanName = p.PlanName,
+        //            PlanDescription = p.PlanDescription,
+        //            PlanActive = p.PlanActive,
+        //            PlanUsers = p.PlanUsers,
+        //            PlanIsAddOn = p.PlanIsAddOn,
+        //            PlanPrice = p.PlanPrice,
+        //            // ADD THIS
+        //            Durations = p.PlanDurations
+        //                .Where(d => d.IsActive)
+        //                .Select(d => new SubscribeRentalPlanDurationDto
+        //                {
+        //                    PlanDurationId = d.PlanDurationId,
+        //                    DurationDays = d.DurationDays,
+        //                    Price = d.Price,
+
+        //                })
+        //                .ToList()
+        //        })
+        //        .FirstOrDefaultAsync();
+        //}
         public async Task<SubscribeRentalPlanResponseDto?> GetSubscriptionRentalPlanByIdAsync(int planId)
         {
             return await _recontext.SubscribePlan
@@ -657,17 +714,18 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
                     PlanActive = p.PlanActive,
                     PlanUsers = p.PlanUsers,
                     PlanIsAddOn = p.PlanIsAddOn,
-                    // ADD THIS
-                    Durations = p.PlanDurations
-                        .Where(d => d.IsActive)
-                        .Select(d => new SubscribeRentalPlanDurationDto
-                        {
-                            PlanDurationId = d.PlanDurationId,
-                            DurationDays = d.DurationDays,
-                            Price = d.Price,
-                           
-                        })
-                        .ToList()
+                    PlanPrice = p.PlanPrice,
+                    Durations = p.PlanIsAddOn
+                        ? null
+                        : p.PlanDurations
+                            .Where(d => d.IsActive)
+                            .Select(d => new SubscribeRentalPlanDurationDto
+                            {
+                                PlanDurationId = d.PlanDurationId,
+                                DurationDays = d.DurationDays,
+                                Price = d.Price,
+                            })
+                            .ToList()
                 })
                 .FirstOrDefaultAsync();
         }
@@ -1057,6 +1115,7 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
                     PlanIsAddOn = p.PlanIsAddOn,
                     PlanUsers = p.PlanUsers,
                     PlanActive = p.PlanActive,
+                    PlanPrice = p.PlanPrice,
                     Durations = p.PlanDurations
                         .Where(d => d.IsActive)
                         .Select(d => new TicketPlanDurationDto
@@ -1454,6 +1513,7 @@ namespace XeniaRegistrationBackend.Repositories.SubscriptionPlan
                     PlanDescription = x.PlanDescription,
                     PlanUsers = x.PlanUsers ?? 0,
                     PlanIsAddOn = x.PlanIsAddOn,
+                    PlanPrice = x.PlanPrice,
                     PlanActive = x.PlanActive,
 
                     Durations = x.PlanDurations

@@ -20,12 +20,13 @@ namespace XeniaRegistrationBackend.Models.Catalog
         public int? PlanUsers { get; set; }
 
         public bool PlanIsAddOn { get; set; }
-
+        public decimal? PlanPrice { get; set; }
         public bool PlanActive { get; set; }
 
         public DateTime? CreatedOn { get; set; } = DateTime.Now;
 
         public DateTime? ModifiedOn { get; set; }
+
 
         public virtual ICollection<CT_SubscribePlanDuration> PlanDurations { get; set; }
             = new List<CT_SubscribePlanDuration>();
